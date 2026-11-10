@@ -1,0 +1,42 @@
+# Push a tag like v1.0.0 and this builds CheatDock.exe and attaches the zip
+# to a GitHub Release. Can also be run by hand from the Actions tab.
+name: Build & release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check cheat sheets parse
+        run: |
+          pip install -r requirements.txt
+          python -c "from cheatdock.loader import load_sheets; s, e = load_sheets(); print([x.name for x in s]); assert not e, e"
+
+      - name: Build
+        shell: pwsh
+        run: .\build.ps1
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CheatDock-windows
+          path: dist/CheatDock-windows.zip
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/CheatDock-windows.zip
+          generate_release_notes: true

@@ -1,0 +1,230 @@
+name: Python
+order: 3
+sections:
+  - name: Environment & packages
+    items:
+      - title: Create and activate a virtual env
+        code: |-
+          python -m venv .venv
+          .venv\Scripts\activate
+        note: macOS / Linux use source .venv/bin/activate
+      - title: Install packages
+        code: |-
+          pip install pandas requests
+          pip install -r requirements.txt
+      - title: Save installed packages
+        code: |-
+          pip freeze > requirements.txt
+      - title: Run a module / script
+        code: |-
+          python -m http.server 8000
+          python script.py arg1 arg2
+
+  - name: Strings
+    items:
+      - title: f-strings
+        code: |-
+          f"{name} is {age} years old"
+          f"{price:,.2f}"   # 1,234.50
+          f"{ratio:.1%}"    # 12.5%
+          f"{value!r}"      # repr
+      - title: Common methods
+        code: |-
+          s.strip()  s.lower()  s.upper()  s.title()
+          s.replace("a", "b")
+          s.startswith("http")  s.endswith(".csv")
+      - title: Split and join
+        code: |-
+          parts = "a,b,c".split(",")
+          ", ".join(parts)
+      - title: Slicing
+        code: |-
+          s[0]   s[-1]   s[2:5]   s[::-1]   # reverse
+      - title: Multi-line string
+        code: |-
+          text = """line one
+          line two"""
+
+  - name: Lists, dicts, sets
+    items:
+      - title: List basics
+        code: |-
+          nums = [3, 1, 2]
+          nums.append(4); nums.extend([5, 6]); nums.insert(0, 9)
+          nums.pop(); nums.remove(9)
+          sorted(nums, reverse=True)
+      - title: List comprehension
+        code: |-
+          squares = [x * x for x in range(10) if x % 2 == 0]
+      - title: Dict basics
+        code: |-
+          d = {"a": 1, "b": 2}
+          d.get("c", 0)
+          d["c"] = 3
+          for key, value in d.items(): ...
+      - title: Dict comprehension
+        code: |-
+          {k: v * 2 for k, v in d.items() if v > 1}
+      - title: Merge dicts
+        code: |-
+          merged = d1 | d2
+      - title: Sets
+        code: |-
+          a = {1, 2, 3}; b = {2, 3, 4}
+          a | b   a & b   a - b
+      - title: Unpacking
+        code: |-
+          first, *rest = [1, 2, 3, 4]
+          a, b = b, a     # swap
+      - title: Sort by key
+        code: |-
+          people.sort(key=lambda p: p["age"])
+          max(people, key=lambda p: p["age"])
+      - title: Count items
+        code: |-
+          from collections import Counter
+          Counter(words).most_common(5)
+      - title: Dict with default values
+        code: |-
+          from collections import defaultdict
+          groups = defaultdict(list)
+          groups[key].append(item)
+
+  - name: Control flow & functions
+    items:
+      - title: Loops with index / pairs
+        code: |-
+          for i, item in enumerate(items, start=1): ...
+          for a, b in zip(list1, list2): ...
+      - title: Ternary
+        code: |-
+          label = "even" if n % 2 == 0 else "odd"
+      - title: match statement
+        code: |-
+          match command:
+              case "start": run()
+              case "stop" | "quit": stop()
+              case _: print("unknown")
+      - title: Function with defaults and type hints
+        code: |-
+          def greet(name: str, greeting: str = "Hi") -> str:
+              return f"{greeting}, {name}"
+      - title: "*args and **kwargs"
+        code: |-
+          def log(*args, **kwargs):
+              print(args, kwargs)
+      - title: Lambda, map, filter
+        code: |-
+          double = lambda x: x * 2
+          list(map(double, nums))
+          list(filter(lambda x: x > 0, nums))
+      - title: Any / all
+        code: |-
+          any(x < 0 for x in nums)
+          all(x > 0 for x in nums)
+
+  - name: Errors & classes
+    items:
+      - title: Try / except / finally
+        code: |-
+          try:
+              value = int(text)
+          except ValueError as e:
+              print(f"Bad number: {e}")
+          else:
+              print("ok")
+          finally:
+              cleanup()
+      - title: Raise an error
+        code: |-
+          raise ValueError("age must be positive")
+      - title: Class
+        code: |-
+          class Person:
+              def __init__(self, name: str):
+                  self.name = name
+
+              def __repr__(self):
+                  return f"Person({self.name!r})"
+      - title: Dataclass
+        code: |-
+          from dataclasses import dataclass
+
+          @dataclass
+          class Point:
+              x: float
+              y: float = 0.0
+
+  - name: Files & paths
+    items:
+      - title: Read / write text
+        code: |-
+          with open("file.txt", encoding="utf-8") as f:
+              text = f.read()
+          with open("out.txt", "w", encoding="utf-8") as f:
+              f.write("hello\n")
+      - title: pathlib
+        code: |-
+          from pathlib import Path
+          p = Path("data") / "file.csv"
+          p.exists(); p.suffix; p.stem; p.parent
+          p.read_text(encoding="utf-8")
+          Path("out").mkdir(parents=True, exist_ok=True)
+      - title: List files
+        code: |-
+          for f in Path(".").rglob("*.csv"):
+              print(f)
+      - title: JSON
+        code: |-
+          import json
+          data = json.loads(Path("cfg.json").read_text())
+          Path("out.json").write_text(json.dumps(data, indent=2))
+      - title: CSV
+        code: |-
+          import csv
+          with open("data.csv", newline="", encoding="utf-8") as f:
+              for row in csv.DictReader(f):
+                  print(row["name"])
+
+  - name: Useful standard library
+    items:
+      - title: Dates
+        code: |-
+          from datetime import datetime, timedelta
+          now = datetime.now()
+          now.strftime("%Y-%m-%d %H:%M")
+          datetime.strptime("2026-01-31", "%Y-%m-%d")
+          now + timedelta(days=7)
+      - title: Regex
+        code: |-
+          import re
+          re.findall(r"\d+", text)
+          re.sub(r"\s+", " ", text)
+          m = re.search(r"(\w+)@(\w+)", text); m.group(1)
+      - title: Command-line arguments
+        code: |-
+          import argparse
+          parser = argparse.ArgumentParser()
+          parser.add_argument("path")
+          parser.add_argument("-v", "--verbose", action="store_true")
+          args = parser.parse_args()
+      - title: Run a shell command
+        code: |-
+          import subprocess
+          result = subprocess.run(["git", "status"], capture_output=True, text=True)
+          print(result.stdout)
+      - title: Logging
+        code: |-
+          import logging
+          logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+          logging.info("started")
+      - title: HTTP request
+        code: |-
+          import requests
+          r = requests.get(url, params={"q": "x"}, timeout=10)
+          r.raise_for_status()
+          data = r.json()
+      - title: Entry point
+        code: |-
+          if __name__ == "__main__":
+              main()

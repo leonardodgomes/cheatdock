@@ -1,0 +1,217 @@
+name: Pandas
+order: 4
+sections:
+  - name: Read & write
+    items:
+      - title: Import
+        code: |-
+          import pandas as pd
+          import numpy as np
+      - title: Read CSV
+        code: |-
+          df = pd.read_csv("data.csv", sep=",", encoding="utf-8",
+                           parse_dates=["date"], usecols=["date", "value"])
+        note: For Brazilian CSVs use sep=";" and decimal=","
+      - title: Read Excel
+        code: |-
+          df = pd.read_excel("file.xlsx", sheet_name="Sheet1")
+        note: Needs openpyxl (pip install openpyxl)
+      - title: Read from SQL
+        code: |-
+          from sqlalchemy import create_engine
+          engine = create_engine("sqlite:///db.sqlite")
+          df = pd.read_sql("SELECT * FROM orders", engine)
+      - title: Write files
+        code: |-
+          df.to_csv("out.csv", index=False)
+          df.to_excel("out.xlsx", index=False)
+          df.to_parquet("out.parquet")
+      - title: Create a DataFrame
+        code: |-
+          df = pd.DataFrame({"name": ["Ana", "Rui"], "age": [30, 25]})
+
+  - name: Inspect
+    items:
+      - title: First look
+        code: |-
+          df.head()   df.tail()   df.sample(5)
+          df.shape    df.columns  df.dtypes
+      - title: Summary
+        code: |-
+          df.info()
+          df.describe(include="all")
+      - title: Count values
+        code: |-
+          df["country"].value_counts(normalize=True)
+      - title: Unique values
+        code: |-
+          df["country"].unique()
+          df["country"].nunique()
+      - title: Missing values per column
+        code: |-
+          df.isna().sum()
+
+  - name: Select & filter
+    items:
+      - title: Select columns
+        code: |-
+          df["name"]
+          df[["name", "age"]]
+      - title: loc (by label) and iloc (by position)
+        code: |-
+          df.loc[df["age"] > 30, ["name", "age"]]
+          df.iloc[0:5, 0:2]
+      - title: Filter with conditions
+        code: |-
+          df[(df["age"] > 30) & (df["country"] == "BR")]
+          df[~df["email"].isna()]
+        note: Use & | ~ with parentheses, not and / or / not.
+      - title: Filter with isin / between
+        code: |-
+          df[df["country"].isin(["BR", "US"])]
+          df[df["age"].between(18, 65)]
+      - title: query()
+        code: |-
+          df.query("age > 30 and country == 'BR'")
+          df.query("value > @threshold")
+      - title: Text filters
+        code: |-
+          df[df["name"].str.contains("ana", case=False, na=False)]
+      - title: Top N rows by value
+        code: |-
+          df.nlargest(10, "revenue")
+
+  - name: Clean
+    items:
+      - title: Rename columns
+        code: |-
+          df = df.rename(columns={"old": "new"})
+          df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+      - title: Drop columns / rows
+        code: |-
+          df = df.drop(columns=["tmp", "notes"])
+          df = df.drop(index=[0, 1])
+      - title: Missing values
+        code: |-
+          df = df.dropna(subset=["email"])
+          df["age"] = df["age"].fillna(df["age"].median())
+      - title: Duplicates
+        code: |-
+          df.duplicated().sum()
+          df = df.drop_duplicates(subset=["email"], keep="last")
+      - title: Change types
+        code: |-
+          df["age"] = df["age"].astype(int)
+          df["value"] = pd.to_numeric(df["value"], errors="coerce")
+          df["date"] = pd.to_datetime(df["date"], dayfirst=True)
+      - title: Replace values
+        code: |-
+          df["status"] = df["status"].replace({"Y": True, "N": False})
+      - title: String cleanup
+        code: |-
+          df["name"] = df["name"].str.strip().str.title()
+          df[["first", "last"]] = df["name"].str.split(" ", n=1, expand=True)
+      - title: Reset index
+        code: |-
+          df = df.reset_index(drop=True)
+
+  - name: New columns
+    items:
+      - title: Calculated column
+        code: |-
+          df["total"] = df["price"] * df["qty"]
+      - title: Conditional column
+        code: |-
+          df["tier"] = np.where(df["total"] > 1000, "high", "low")
+      - title: Multiple conditions
+        code: |-
+          df["tier"] = np.select(
+              [df["total"] > 1000, df["total"] > 100],
+              ["high", "medium"],
+              default="low",
+          )
+      - title: assign() in a chain
+        code: |-
+          df = df.assign(total=lambda d: d["price"] * d["qty"])
+      - title: map / apply
+        code: |-
+          df["country_name"] = df["country"].map({"BR": "Brazil", "US": "USA"})
+          df["len"] = df["name"].apply(len)
+        note: Prefer vectorized operations; apply is slow on big data.
+      - title: Bins
+        code: |-
+          df["age_group"] = pd.cut(df["age"], bins=[0, 18, 40, 65, 120],
+                                   labels=["kid", "young", "adult", "senior"])
+      - title: Date parts
+        code: |-
+          df["year"] = df["date"].dt.year
+          df["month"] = df["date"].dt.to_period("M")
+          df["weekday"] = df["date"].dt.day_name()
+
+  - name: Group & aggregate
+    items:
+      - title: Group by one column
+        code: |-
+          df.groupby("country")["revenue"].sum()
+      - title: Several aggregations with names
+        code: |-
+          df.groupby(["country", "year"], as_index=False).agg(
+              revenue=("revenue", "sum"),
+              orders=("id", "count"),
+              avg_ticket=("revenue", "mean"),
+          )
+      - title: Group value back on each row
+        code: |-
+          df["share"] = df["revenue"] / df.groupby("country")["revenue"].transform("sum")
+      - title: Pivot table
+        code: |-
+          pd.pivot_table(df, index="country", columns="year",
+                         values="revenue", aggfunc="sum", fill_value=0)
+      - title: Crosstab
+        code: |-
+          pd.crosstab(df["country"], df["status"], margins=True)
+      - title: Resample time series
+        code: |-
+          df.set_index("date").resample("ME")["revenue"].sum()
+        note: "D day, W week, ME month end, QE quarter end, YE year end"
+      - title: Rolling window
+        code: |-
+          df["ma7"] = df["value"].rolling(7).mean()
+
+  - name: Combine & reshape
+    items:
+      - title: Merge (SQL join)
+        code: |-
+          df = orders.merge(customers, left_on="customer_id", right_on="id",
+                            how="left", validate="many_to_one")
+        note: how = inner | left | right | outer
+      - title: Concatenate
+        code: |-
+          all_df = pd.concat([df1, df2], ignore_index=True)
+      - title: Wide to long (melt)
+        code: |-
+          long = df.melt(id_vars=["id"], var_name="month", value_name="value")
+      - title: Long to wide (pivot)
+        code: |-
+          wide = long.pivot(index="id", columns="month", values="value")
+      - title: Explode lists into rows
+        code: |-
+          df.explode("tags")
+
+  - name: Sort & export view
+    items:
+      - title: Sort
+        code: |-
+          df.sort_values(["country", "revenue"], ascending=[True, False])
+      - title: Show all columns
+        code: |-
+          pd.set_option("display.max_columns", None)
+          pd.set_option("display.width", 200)
+      - title: Quick plot
+        code: |-
+          df.plot(x="date", y="revenue", kind="line")
+          df["age"].plot(kind="hist", bins=20)
+        note: Needs matplotlib.
+      - title: Copy to clipboard (paste in Excel)
+        code: |-
+          df.to_clipboard(index=False)

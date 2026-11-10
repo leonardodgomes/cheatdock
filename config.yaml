@@ -1,0 +1,9 @@
+# CheatDock settings. Restart the app after changing this file.
+
+edge: right               # right | left
+width: 440                # width of the open panel, in pixels
+handle_width: 6           # width of the strip visible when closed
+expand_on_hover: true     # open when the mouse touches the strip
+collapse_delay_ms: 500    # wait this long after the mouse leaves before closing
+hotkey: ctrl+alt+space    # global shortcut; e.g. ctrl+shift+k, win+alt+c, f9 ("" to disable)
+opacity: 0.97             # 0.5 - 1.0

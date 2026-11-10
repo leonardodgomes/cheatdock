@@ -1,0 +1,186 @@
+name: PowerShell
+order: 1
+sections:
+  - name: Help & discovery
+    items:
+      - title: Help for a command
+        code: |-
+          Get-Help Get-ChildItem -Examples
+        note: Run Update-Help once (as admin) to download full help.
+      - title: Find commands by name
+        code: |-
+          Get-Command *service*
+      - title: Properties and methods of an object
+        code: |-
+          Get-Process | Get-Member
+      - title: Command history
+        code: |-
+          Get-History
+          Invoke-History 12
+        note: Ctrl+R searches history interactively.
+
+  - name: Files & folders
+    items:
+      - title: List files (including hidden)
+        code: |-
+          Get-ChildItem -Force
+        note: Aliases ls, dir, gci
+      - title: Find files recursively
+        code: |-
+          Get-ChildItem -Path . -Recurse -Filter *.csv
+      - title: Change / show directory
+        code: |-
+          Set-Location C:\Projects
+          Get-Location
+      - title: Create folder and file
+        code: |-
+          New-Item -ItemType Directory -Path .\logs -Force
+          New-Item -ItemType File -Path .\notes.txt
+      - title: Copy, move, rename
+        code: |-
+          Copy-Item .\a.txt .\backup\ -Recurse
+          Move-Item .\a.txt .\archive\
+          Rename-Item .\old.txt new.txt
+      - title: Delete recursively
+        code: |-
+          Remove-Item .\temp -Recurse -Force
+        note: Add -WhatIf first to preview what would be deleted.
+      - title: Test if a path exists
+        code: |-
+          Test-Path .\config.json
+      - title: Folder size
+        code: |-
+          (Get-ChildItem . -Recurse -File | Measure-Object Length -Sum).Sum / 1MB
+
+  - name: Reading & writing content
+    items:
+      - title: Read a file
+        code: |-
+          Get-Content .\file.txt
+        note: Alias cat. -TotalCount 10 = head, -Tail 10 = tail
+      - title: Follow a log file live
+        code: |-
+          Get-Content .\app.log -Wait -Tail 20
+      - title: Write / append to a file
+        code: |-
+          "hello" | Set-Content .\out.txt -Encoding utf8
+          "more"  | Add-Content .\out.txt
+      - title: Search text in files (grep)
+        code: |-
+          Select-String -Path .\*.log -Pattern "ERROR"
+      - title: Import / export CSV
+        code: |-
+          $rows = Import-Csv .\data.csv
+          $rows | Export-Csv .\out.csv -NoTypeInformation -Encoding utf8
+      - title: JSON to object and back
+        code: |-
+          $obj = Get-Content .\cfg.json -Raw | ConvertFrom-Json
+          $obj | ConvertTo-Json -Depth 5 | Set-Content .\cfg.json
+
+  - name: Pipeline
+    items:
+      - title: Filter objects
+        code: |-
+          Get-Process | Where-Object { $_.CPU -gt 100 }
+      - title: Select columns
+        code: |-
+          Get-Process | Select-Object Name, Id, CPU -First 10
+      - title: Sort
+        code: |-
+          Get-ChildItem | Sort-Object Length -Descending
+      - title: Loop over each item
+        code: |-
+          Get-ChildItem *.txt | ForEach-Object { $_.Name.ToUpper() }
+      - title: Group and count
+        code: |-
+          Get-Service | Group-Object Status
+      - title: Sum / average
+        code: |-
+          Get-ChildItem -File | Measure-Object Length -Sum -Average -Maximum
+      - title: Show as table / list
+        code: |-
+          Get-Service | Format-Table -AutoSize
+          Get-Process -Id $PID | Format-List *
+      - title: Interactive grid view
+        code: |-
+          Get-Process | Out-GridView
+
+  - name: Processes, services & system
+    items:
+      - title: Find and stop a process
+        code: |-
+          Get-Process chrome
+          Stop-Process -Name notepad -Force
+      - title: Start a program
+        code: |-
+          Start-Process notepad .\file.txt
+          Start-Process powershell -Verb RunAs
+        note: -Verb RunAs opens it as administrator.
+      - title: Services
+        code: |-
+          Get-Service | Where-Object Status -eq Running
+          Restart-Service -Name Spooler
+      - title: Which program is using a port
+        code: |-
+          Get-NetTCPConnection -LocalPort 8080 | Select-Object OwningProcess
+      - title: Computer info
+        code: |-
+          Get-ComputerInfo | Select-Object OsName, OsVersion, CsTotalPhysicalMemory
+      - title: Disk free space
+        code: |-
+          Get-PSDrive -PSProvider FileSystem
+
+  - name: Variables & scripting
+    items:
+      - title: Variables, arrays, hashtables
+        code: |-
+          $name = "Ana"
+          $list = @(1, 2, 3)
+          $map  = @{ key = "value"; n = 1 }
+      - title: String interpolation
+        code: |-
+          "Hello $name, today is $(Get-Date -Format 'yyyy-MM-dd')"
+      - title: If / elseif / else
+        code: |-
+          if ($x -gt 10) { "big" } elseif ($x -eq 10) { "ten" } else { "small" }
+        note: Comparison operators are -eq -ne -gt -ge -lt -le -like -match
+      - title: Foreach loop
+        code: |-
+          foreach ($f in Get-ChildItem *.txt) { Write-Host $f.Name }
+      - title: Function with parameters
+        code: |-
+          function Get-Square {
+              param([int]$Number)
+              $Number * $Number
+          }
+      - title: Try / catch
+        code: |-
+          try { Get-Item .\missing.txt -ErrorAction Stop }
+          catch { Write-Warning $_.Exception.Message }
+      - title: Environment variables
+        code: |-
+          $env:PATH
+          $env:MY_VAR = "value"
+      - title: Allow running local scripts
+        code: |-
+          Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+
+  - name: Network & web
+    items:
+      - title: Ping / test a port
+        code: |-
+          Test-Connection google.com -Count 2
+          Test-NetConnection localhost -Port 5432
+      - title: Call a REST API
+        code: |-
+          Invoke-RestMethod https://api.github.com/repos/python/cpython
+      - title: Download a file
+        code: |-
+          Invoke-WebRequest -Uri $url -OutFile .\file.zip
+      - title: Zip / unzip
+        code: |-
+          Compress-Archive -Path .\folder -DestinationPath .\folder.zip
+          Expand-Archive .\folder.zip -DestinationPath .\out
+      - title: IP configuration
+        code: |-
+          Get-NetIPAddress -AddressFamily IPv4

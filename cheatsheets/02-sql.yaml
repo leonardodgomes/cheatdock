@@ -1,0 +1,228 @@
+name: SQL
+order: 2
+sections:
+  - name: Querying
+    items:
+      - title: Select columns
+        code: |-
+          SELECT id, name, email
+          FROM customers;
+      - title: Filter rows
+        code: |-
+          SELECT * FROM orders
+          WHERE status = 'paid' AND total > 100;
+      - title: IN, BETWEEN, LIKE
+        code: |-
+          WHERE country IN ('BR', 'US')
+            AND created_at BETWEEN '2026-01-01' AND '2026-12-31'
+            AND name LIKE 'Jo%'
+        note: "% = any characters, _ = exactly one character"
+      - title: NULL checks
+        code: |-
+          WHERE phone IS NULL
+          WHERE phone IS NOT NULL
+        note: Never use = NULL, it is always unknown.
+      - title: Sort and limit
+        code: |-
+          SELECT * FROM products
+          ORDER BY price DESC, name ASC
+          LIMIT 10 OFFSET 20;
+        note: SQL Server uses SELECT TOP 10 ... or OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY
+      - title: Unique values
+        code: |-
+          SELECT DISTINCT country FROM customers;
+      - title: Aliases
+        code: |-
+          SELECT c.name AS customer, o.total AS amount
+          FROM customers AS c
+          JOIN orders AS o ON o.customer_id = c.id;
+      - title: CASE expression
+        code: |-
+          SELECT name,
+                 CASE WHEN total >= 1000 THEN 'high'
+                      WHEN total >= 100  THEN 'medium'
+                      ELSE 'low' END AS tier
+          FROM orders;
+      - title: Replace NULL with a default
+        code: |-
+          SELECT COALESCE(phone, 'n/a') FROM customers;
+
+  - name: Aggregation
+    items:
+      - title: Count, sum, avg, min, max
+        code: |-
+          SELECT COUNT(*), SUM(total), AVG(total), MIN(total), MAX(total)
+          FROM orders;
+      - title: Group by
+        code: |-
+          SELECT customer_id, COUNT(*) AS n, SUM(total) AS revenue
+          FROM orders
+          GROUP BY customer_id;
+      - title: Filter groups with HAVING
+        code: |-
+          SELECT customer_id, SUM(total) AS revenue
+          FROM orders
+          GROUP BY customer_id
+          HAVING SUM(total) > 1000;
+        note: WHERE filters rows before grouping, HAVING filters after.
+      - title: Count distinct
+        code: |-
+          SELECT COUNT(DISTINCT customer_id) FROM orders;
+
+  - name: Joins
+    items:
+      - title: INNER JOIN (only matches)
+        code: |-
+          SELECT *
+          FROM orders o
+          INNER JOIN customers c ON c.id = o.customer_id;
+      - title: LEFT JOIN (keep all left rows)
+        code: |-
+          SELECT c.name, o.id
+          FROM customers c
+          LEFT JOIN orders o ON o.customer_id = c.id;
+      - title: Rows with no match (anti-join)
+        code: |-
+          SELECT c.*
+          FROM customers c
+          LEFT JOIN orders o ON o.customer_id = c.id
+          WHERE o.id IS NULL;
+      - title: FULL OUTER / CROSS JOIN
+        code: |-
+          SELECT * FROM a FULL OUTER JOIN b ON a.id = b.id;
+          SELECT * FROM sizes CROSS JOIN colors;
+      - title: Self join
+        code: |-
+          SELECT e.name, m.name AS manager
+          FROM employees e
+          LEFT JOIN employees m ON m.id = e.manager_id;
+      - title: UNION / UNION ALL
+        code: |-
+          SELECT email FROM customers
+          UNION
+          SELECT email FROM leads;
+        note: UNION removes duplicates, UNION ALL keeps them (faster).
+
+  - name: Subqueries, CTEs & window functions
+    items:
+      - title: Subquery in WHERE
+        code: |-
+          SELECT * FROM products
+          WHERE price > (SELECT AVG(price) FROM products);
+      - title: EXISTS
+        code: |-
+          SELECT * FROM customers c
+          WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);
+      - title: CTE (WITH)
+        code: |-
+          WITH revenue AS (
+              SELECT customer_id, SUM(total) AS total
+              FROM orders GROUP BY customer_id
+          )
+          SELECT * FROM revenue WHERE total > 1000;
+      - title: Row number per group
+        code: |-
+          SELECT *,
+                 ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY created_at DESC) AS rn
+          FROM orders;
+        note: Wrap it in a CTE and filter rn = 1 to get the latest row per group.
+      - title: Running total
+        code: |-
+          SELECT created_at, total,
+                 SUM(total) OVER (ORDER BY created_at) AS running_total
+          FROM orders;
+      - title: Rank, lag and lead
+        code: |-
+          SELECT name, score,
+                 RANK() OVER (ORDER BY score DESC) AS rnk,
+                 LAG(score)  OVER (ORDER BY created_at) AS prev_score,
+                 LEAD(score) OVER (ORDER BY created_at) AS next_score
+          FROM results;
+
+  - name: Changing data
+    items:
+      - title: Insert rows
+        code: |-
+          INSERT INTO customers (name, email)
+          VALUES ('Ana', 'ana@example.com'),
+                 ('Rui', 'rui@example.com');
+      - title: Insert from a query
+        code: |-
+          INSERT INTO archive (id, total)
+          SELECT id, total FROM orders WHERE created_at < '2025-01-01';
+      - title: Update
+        code: |-
+          UPDATE orders
+          SET status = 'shipped'
+          WHERE id = 42;
+        note: Always run the WHERE as a SELECT first.
+      - title: Delete
+        code: |-
+          DELETE FROM sessions
+          WHERE expires_at < CURRENT_TIMESTAMP;
+      - title: Transaction
+        code: |-
+          BEGIN;
+          UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+          UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+          COMMIT;   -- or ROLLBACK;
+
+  - name: Tables & schema
+    items:
+      - title: Create table
+        code: |-
+          CREATE TABLE customers (
+              id         INTEGER PRIMARY KEY,
+              name       VARCHAR(100) NOT NULL,
+              email      VARCHAR(255) UNIQUE,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+      - title: Foreign key
+        code: |-
+          CREATE TABLE orders (
+              id          INTEGER PRIMARY KEY,
+              customer_id INTEGER REFERENCES customers(id),
+              total       DECIMAL(10, 2)
+          );
+      - title: Alter table
+        code: |-
+          ALTER TABLE customers ADD COLUMN phone VARCHAR(20);
+          ALTER TABLE customers DROP COLUMN phone;
+      - title: Index
+        code: |-
+          CREATE INDEX idx_orders_customer ON orders (customer_id);
+      - title: View
+        code: |-
+          CREATE VIEW paid_orders AS
+          SELECT * FROM orders WHERE status = 'paid';
+      - title: Drop / empty a table
+        code: |-
+          TRUNCATE TABLE logs;
+          DROP TABLE IF EXISTS temp_data;
+      - title: Query plan
+        code: |-
+          EXPLAIN SELECT * FROM orders WHERE customer_id = 7;
+
+  - name: Text & dates
+    items:
+      - title: String functions
+        code: |-
+          SELECT UPPER(name), LOWER(email), TRIM(code),
+                 LENGTH(name), SUBSTRING(name, 1, 3),
+                 REPLACE(phone, '-', '')
+          FROM customers;
+        note: SQL Server uses LEN instead of LENGTH.
+      - title: Concatenate
+        code: |-
+          SELECT CONCAT(first_name, ' ', last_name) AS full_name FROM people;
+      - title: Current date and time
+        code: |-
+          SELECT CURRENT_DATE, CURRENT_TIMESTAMP;
+      - title: Extract part of a date
+        code: |-
+          SELECT EXTRACT(YEAR FROM created_at) AS yr,
+                 EXTRACT(MONTH FROM created_at) AS mo
+          FROM orders;
+      - title: Cast types
+        code: |-
+          SELECT CAST(price AS INTEGER), CAST('2026-01-01' AS DATE);
