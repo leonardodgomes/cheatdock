@@ -22,10 +22,12 @@ def base_dir() -> Path:
 
 @dataclass
 class Config:
-    edge: str = "right"            # "right" or "left"
+    edge: str = "right"            # starting side: "right" or "left"
     width: int = 440               # expanded width in px
-    handle_width: int = 6          # collapsed strip width in px
+    icon_size: int = 40            # size of the edge icon in px
+    icon_position: float = 0.5     # starting height: 0 = top, 1 = bottom
     expand_on_hover: bool = True
+    hover_delay_ms: int = 250
     collapse_delay_ms: int = 500
     hotkey: str = "ctrl+alt+space"
     opacity: float = 0.97

@@ -2,12 +2,13 @@
 
 A cheat sheet that lives on the edge of your screen.
 
-CheatDock stays out of the way as a thin strip on the side of your monitor. Touch it with the mouse (or press **Ctrl+Alt+Space** from any app) and it slides open with tabs for **PowerShell, SQL, Python and Pandas**. Click a command to copy it, then go back to work.
+CheatDock stays out of the way as a small `>_` icon on the edge of your monitor. Rest the mouse on it, click it, or press **Ctrl+Alt+Space** from any app, and it slides open with tabs for **PowerShell, SQL, Python and Pandas**. Click a command to copy it, then go back to work.
 
 ## Features
 
-- **Docked to the screen edge** (right or left), always on top, never in your taskbar
-- **Opens on hover or with a global hotkey**, and closes when you move away or press `Esc`
+- **A small icon docked to the screen edge**, always on top, never in your taskbar
+- **Works with multiple monitors**: drag the icon, or the panel's title bar, to any side of any screen. It snaps to the nearest edge and remembers where you left it
+- **Opens on hover, click or a global hotkey**, and closes when you move away or press `Esc`
 - **Search across every tab at once.** Each tab shows how many matches it has, and `Enter` copies the first result
 - **Click to copy** any command
 - **Pin** the panel open while you work through something
@@ -71,14 +72,18 @@ Use `code: |-` followed by an indented block. That way you never have to escape 
 Edit [`config.yaml`](config.yaml) and restart the app:
 
 ```yaml
-edge: right               # right | left
+edge: right               # starting side before you drag it
 width: 440
-handle_width: 6
+icon_size: 40
+icon_position: 0.5        # starting height: 0 top, 1 bottom
 expand_on_hover: true
+hover_delay_ms: 250
 collapse_delay_ms: 500
 hotkey: ctrl+alt+space    # e.g. ctrl+shift+k, win+alt+c, f9 ("" to disable)
 opacity: 0.97
 ```
+
+The position you drag it to (screen, side and height) is saved in `%LOCALAPPDATA%\CheatDock\state.json`. The tray menu also has **Move to next screen**.
 
 ## Building the .exe yourself
 

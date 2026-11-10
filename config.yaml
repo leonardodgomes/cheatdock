@@ -1,9 +1,13 @@
 # CheatDock settings. Restart the app after changing this file.
+# Tip: drag the icon (or the panel's title bar) to move CheatDock to another
+# side or another monitor. That position is remembered automatically.
 
-edge: right               # right | left
+edge: right               # starting side before you drag it: right | left
 width: 440                # width of the open panel, in pixels
-handle_width: 6           # width of the strip visible when closed
-expand_on_hover: true     # open when the mouse touches the strip
+icon_size: 40             # size of the edge icon, in pixels
+icon_position: 0.5        # starting height of the icon: 0 = top, 0.5 = middle, 1 = bottom
+expand_on_hover: true     # open when the mouse rests on the icon
+hover_delay_ms: 250       # how long to rest on the icon before it opens
 collapse_delay_ms: 500    # wait this long after the mouse leaves before closing
 hotkey: ctrl+alt+space    # global shortcut; e.g. ctrl+shift+k, win+alt+c, f9 ("" to disable)
 opacity: 0.97             # 0.5 - 1.0

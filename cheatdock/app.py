@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import (
-    QDir, QEasingCurve, QFileSystemWatcher, QLockFile, QPropertyAnimation,
-    QRect, Qt, QTimer, QUrl, Signal,
+    QDir, QEasingCurve, QFileSystemWatcher, QLockFile, QPoint, QPropertyAnimation,
+    QRect, QRectF, QStandardPaths, Qt, QTimer, QUrl, Signal,
 )
 from PySide6.QtGui import (
     QAction, QColor, QCursor, QDesktopServices, QFont, QFontDatabase, QGuiApplication,
-    QIcon, QKeySequence, QPainter, QPixmap, QShortcut,
+    QIcon, QKeySequence, QPainter, QPen, QPixmap, QShortcut,
 )
 from PySide6.QtWidgets import (
     QApplication, QFrame, QHBoxLayout, QLabel, QLineEdit, QMenu, QMessageBox,
@@ -215,6 +217,90 @@ class SheetTab(QScrollArea):
         return None
 
 
+class DragArea(QWidget):
+    """A widget that moves the dock when dragged and reports plain clicks."""
+
+    clicked = Signal()
+
+    def __init__(self, dock: "Dock", parent=None):
+        super().__init__(parent)
+        self.dock = dock
+        self._press: QPoint | None = None
+        self._dragging = False
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._press = event.globalPosition().toPoint()
+            self._dragging = False
+            self.dock.hover_timer.stop()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        if self._press is not None:
+            pos = event.globalPosition().toPoint()
+            if not self._dragging and (pos - self._press).manhattanLength() > 6:
+                self._dragging = True
+                self.dock.drag_start(self._press)
+            if self._dragging:
+                self.dock.drag_move(pos)
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton and self._press is not None:
+            if self._dragging:
+                self.dock.drag_end(event.globalPosition().toPoint())
+            else:
+                self.clicked.emit()
+        self._press = None
+        self._dragging = False
+        super().mouseReleaseEvent(event)
+
+
+class EdgeIcon(DragArea):
+    """Small tab on the screen edge shown while the panel is closed."""
+
+    def __init__(self, dock: "Dock", parent=None):
+        super().__init__(dock, parent)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setToolTip("CheatDock: hover or click to open, drag to move (even to another screen)")
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover)
+
+    def paintEvent(self, event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        # Extend the shape past the screen edge so only the inner corners are rounded.
+        ext = 12
+        if self.dock.edge == "right":
+            shape = QRectF(1, 1, w + ext, h - 2)
+        else:
+            shape = QRectF(-ext, 1, w + ext - 1, h - 2)
+        hovered = self.underMouse()
+        p.setBrush(QColor("#2a2e37" if hovered else "#1b1d22"))
+        p.setPen(QPen(QColor(ACCENT), 1.6))
+        p.drawRoundedRect(shape, 10, 10)
+        font = QFont("Consolas")
+        font.setPixelSize(max(10, int(h * 0.36)))
+        font.setBold(True)
+        p.setFont(font)
+        p.setPen(QColor(ACCENT))
+        p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, ">_")
+        p.end()
+
+    def enterEvent(self, event):
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.update()
+        super().leaveEvent(event)
+
+
+def state_file() -> Path:
+    folder = Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation))
+    return folder / "state.json"
+
+
 class Dock(QWidget):
     def __init__(self, cfg: Config):
         super().__init__(
@@ -224,10 +310,19 @@ class Dock(QWidget):
             | Qt.WindowType.Tool,
         )
         self.cfg = cfg
-        self.expanded = False
+        self.expanded = False      # where we are heading (open / closed)
+        self.mode = "icon"         # what is drawn right now: "icon" or "panel"
         self.pinned = False
+        self.dragging = False
+        self._drag_offset = QPoint()
         self.mono = mono_font()
         self.tabs_by_sheet: list[SheetTab] = []
+
+        # Position: which screen, which side, and how far down the icon sits.
+        self.screen_name = ""
+        self.edge = cfg.edge
+        self.y_frac = min(1.0, max(0.0, float(cfg.icon_position)))
+        self._load_state()
 
         self.setWindowTitle("CheatDock")
         self.setWindowIcon(app_icon())
@@ -235,12 +330,8 @@ class Dock(QWidget):
         self.setWindowOpacity(float(cfg.opacity))
         self.setStyleSheet(STYLE)
 
-        # Thin strip that stays on screen while collapsed.
-        self.handle = QFrame(self)
-        self.handle.setStyleSheet(
-            f"background: rgba(79,157,255,110); border-radius: {max(1, cfg.handle_width // 2)}px;"
-        )
-        self.handle.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.icon = EdgeIcon(self, self)
+        self.icon.clicked.connect(lambda: self.expand(focus=True))
 
         self.panel = QFrame(self)
         self.panel.setObjectName("panel")
@@ -249,8 +340,13 @@ class Dock(QWidget):
         self.anim = QPropertyAnimation(self, b"geometry", self)
         self.anim.setDuration(170)
         self.anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.anim.finished.connect(self._on_anim_done)
 
-        self.hover_timer = QTimer(self, singleShot=True, interval=140)
+        app = QGuiApplication.instance()
+        app.screenAdded.connect(lambda _: self._apply_position())
+        app.screenRemoved.connect(lambda _: QTimer.singleShot(200, self._apply_position))
+
+        self.hover_timer = QTimer(self, singleShot=True, interval=int(cfg.hover_delay_ms))
         self.hover_timer.timeout.connect(self.expand)
         self.collapse_timer = QTimer(self, singleShot=True, interval=int(cfg.collapse_delay_ms))
         self.collapse_timer.timeout.connect(self._maybe_collapse)
@@ -263,7 +359,7 @@ class Dock(QWidget):
         self.watcher.fileChanged.connect(lambda _: self.reload_timer.start())
 
         self.reload()
-        self.setGeometry(self._target_rect(False))
+        self._apply_position()
 
     # ---------- UI ----------
     def _build_panel(self) -> None:
@@ -271,9 +367,15 @@ class Dock(QWidget):
         lay.setContentsMargins(14, 12, 10, 8)
         lay.setSpacing(8)
 
-        top = QHBoxLayout()
+        # The title bar doubles as a drag handle to move the panel.
+        title_bar = DragArea(self)
+        title_bar.setCursor(Qt.CursorShape.SizeAllCursor)
+        title_bar.setToolTip("Drag to move to another side or screen")
+        top = QHBoxLayout(title_bar)
+        top.setContentsMargins(0, 0, 0, 0)
         title = QLabel("CheatDock")
         title.setObjectName("appTitle")
+        title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         top.addWidget(title)
         top.addStretch(1)
 
@@ -288,7 +390,7 @@ class Dock(QWidget):
         close_btn.clicked.connect(lambda: self.collapse(force=True))
         for b in (self.pin_btn, reload_btn, close_btn):
             top.addWidget(b)
-        lay.addLayout(top)
+        lay.addWidget(title_bar)
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("Search all commands…   (Enter copies the first match)")
@@ -397,36 +499,130 @@ class Dock(QWidget):
         else:
             self.collapse(force=True)
 
-    # ---------- docking / animation ----------
-    def _target_rect(self, expanded: bool) -> QRect:
-        area = QGuiApplication.primaryScreen().availableGeometry()
-        hw, pw = int(self.cfg.handle_width), int(self.cfg.width)
-        w = hw + pw if expanded else hw
-        x = area.left() if self.cfg.edge == "left" else area.right() + 1 - w
-        return QRect(x, area.top(), w, area.height())
+    # ---------- position / state ----------
+    def _screen(self):
+        for s in QGuiApplication.screens():
+            if s.name() == self.screen_name:
+                return s
+        return QGuiApplication.primaryScreen()
 
-    def resizeEvent(self, event):
-        w, h = self.width(), self.height()
-        hw, pw = int(self.cfg.handle_width), int(self.cfg.width)
-        if self.cfg.edge == "left":
-            self.panel.setGeometry(w - hw - pw, 0, pw, h)
-            self.handle.setGeometry(w - hw, 0, hw, h)
+    def _load_state(self) -> None:
+        try:
+            data = json.loads(state_file().read_text(encoding="utf-8"))
+            self.screen_name = str(data.get("screen", ""))
+            if data.get("edge") in ("left", "right"):
+                self.edge = data["edge"]
+            self.y_frac = min(1.0, max(0.0, float(data.get("y", self.y_frac))))
+        except (OSError, ValueError, TypeError):
+            pass
+
+    def _save_state(self) -> None:
+        try:
+            path = state_file()
+            path.parent.mkdir(parents=True, exist_ok=True)
+            data = {"screen": self.screen_name, "edge": self.edge, "y": round(self.y_frac, 4)}
+            path.write_text(json.dumps(data), encoding="utf-8")
+        except OSError:
+            pass
+
+    def _target_rect(self, mode: str) -> QRect:
+        """Geometry for 'icon', 'panel' or 'strip' (1px wide, used to slide in/out)."""
+        area = self._screen().availableGeometry()
+        if mode == "icon":
+            size = int(self.cfg.icon_size)
+            w, h = size, size
+            y = area.top() + round(self.y_frac * max(0, area.height() - size))
         else:
-            self.handle.setGeometry(0, 0, hw, h)
-            self.panel.setGeometry(hw, 0, pw, h)
-        super().resizeEvent(event)
+            w = int(self.cfg.width) if mode == "panel" else 1
+            h, y = area.height(), area.top()
+        x = area.left() if self.edge == "left" else area.right() + 1 - w
+        return QRect(x, y, w, h)
 
-    def _animate(self, expanded: bool) -> None:
+    def _apply_position(self) -> None:
+        self.anim.stop()
+        self.setGeometry(self._target_rect(self.mode))
+        self._layout_children()
+        self.icon.update()
+
+    def move_to_next_screen(self) -> None:
+        screens = QGuiApplication.screens()
+        if len(screens) < 2:
+            return
+        idx = screens.index(self._screen()) if self._screen() in screens else 0
+        self.screen_name = screens[(idx + 1) % len(screens)].name()
+        self._save_state()
+        self._apply_position()
+
+    # ---------- dragging (icon or title bar) ----------
+    def drag_start(self, global_pos: QPoint) -> None:
+        self.dragging = True
+        self.anim.stop()
+        self.hover_timer.stop()
+        self.collapse_timer.stop()
+        self._drag_offset = global_pos - self.pos()
+        if self.mode == "panel":
+            # Shrink the panel to a floating card while it is carried around.
+            g = self.geometry()
+            self.setGeometry(g.x(), g.y(), g.width(), min(g.height(), 420))
+            self._layout_children()
+
+    def drag_move(self, global_pos: QPoint) -> None:
+        self.move(global_pos - self._drag_offset)
+
+    def drag_end(self, global_pos: QPoint) -> None:
+        screen = QGuiApplication.screenAt(global_pos) or self._screen()
+        area = screen.availableGeometry()
+        self.screen_name = screen.name()
+        self.edge = "left" if global_pos.x() < area.center().x() else "right"
+        if self.mode == "icon":
+            size = int(self.cfg.icon_size)
+            span = max(1, area.height() - size)
+            self.y_frac = min(1.0, max(0.0, (self.y() - area.top()) / span))
+        self._save_state()
+        self.dragging = False
+        self.icon.update()
         self.anim.stop()
         self.anim.setStartValue(self.geometry())
-        self.anim.setEndValue(self._target_rect(expanded))
+        self.anim.setEndValue(self._target_rect(self.mode))
         self.anim.start()
+
+    # ---------- open / close ----------
+    def _layout_children(self) -> None:
+        w, h = self.width(), self.height()
+        if self.mode == "icon":
+            self.panel.hide()
+            self.icon.setGeometry(0, 0, w, h)
+            self.icon.show()
+        else:
+            self.icon.hide()
+            pw = int(self.cfg.width)
+            # Anchor the panel to the moving side so it slides in from the edge.
+            x = w - pw if self.edge == "left" else 0
+            self.panel.setGeometry(x, 0, pw, h)
+            self.panel.show()
+
+    def resizeEvent(self, event):
+        self._layout_children()
+        super().resizeEvent(event)
+
+    def _on_anim_done(self) -> None:
+        if not self.expanded and self.mode == "panel" and not self.dragging:
+            self.mode = "icon"
+            self.setGeometry(self._target_rect("icon"))
+            self._layout_children()
 
     def expand(self, focus: bool = False) -> None:
         self.collapse_timer.stop()
-        if not self.expanded:
+        self.hover_timer.stop()
+        if not self.expanded and not self.dragging:
             self.expanded = True
-            self._animate(True)
+            self.anim.stop()
+            self.mode = "panel"
+            self.setGeometry(self._target_rect("strip"))
+            self._layout_children()
+            self.anim.setStartValue(self.geometry())
+            self.anim.setEndValue(self._target_rect("panel"))
+            self.anim.start()
         self.raise_()
         if focus:
             self.activateWindow()
@@ -436,12 +632,15 @@ class Dock(QWidget):
             self.focus_search()
 
     def collapse(self, force: bool = False) -> None:
-        if not self.expanded or (self.pinned and not force):
+        if not self.expanded or self.dragging or (self.pinned and not force):
             return
         if force and self.pinned:
             self.pin_btn.setChecked(False)
         self.expanded = False
-        self._animate(False)
+        self.anim.stop()
+        self.anim.setStartValue(self.geometry())
+        self.anim.setEndValue(self._target_rect("strip"))
+        self.anim.start()
 
     def toggle(self) -> None:
         if self.expanded:
@@ -463,25 +662,19 @@ class Dock(QWidget):
 
     def enterEvent(self, event):
         self.collapse_timer.stop()
-        if self.cfg.expand_on_hover and not self.expanded:
+        if self.cfg.expand_on_hover and not self.expanded and not self.dragging:
             self.hover_timer.start()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         self.hover_timer.stop()
-        if self.expanded and not self.pinned:
+        if self.expanded and not self.pinned and not self.dragging:
             self.collapse_timer.start()
         super().leaveEvent(event)
 
-    def mousePressEvent(self, event):
-        # Clicking the strip opens the panel even when hover is disabled.
-        if not self.expanded:
-            self.expand(focus=True)
-        super().mousePressEvent(event)
-
     def changeEvent(self, event):
         if event.type() == event.Type.ActivationChange and not self.isActiveWindow():
-            if self.expanded and not self.pinned and not self._cursor_inside():
+            if self.expanded and not self.pinned and not self.dragging and not self._cursor_inside():
                 self.collapse_timer.start()
         super().changeEvent(event)
 
@@ -498,6 +691,7 @@ def build_tray(app: QApplication, dock: Dock) -> QSystemTrayIcon:
         return act
 
     add("Show / hide", dock.toggle)
+    add("Move to next screen", dock.move_to_next_screen)
     add("Reload cheat sheets", dock.reload)
     add("Open cheat sheets folder",
         lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(base_dir() / "cheatsheets"))))
