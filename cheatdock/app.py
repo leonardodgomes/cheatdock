@@ -23,53 +23,81 @@ from . import __version__
 from .hotkey import GlobalHotkey
 from .loader import Config, Item, Sheet, base_dir, load_config, load_sheets
 
-ACCENT = "#4f9dff"
+ACCENT = "#4f9dff"  # tray / taskbar icon colour
 
-STYLE = f"""
-#panel {{ background: #1b1d22; border-left: 1px solid #2c2f37; border-right: 1px solid #2c2f37; }}
-QWidget {{ color: #d7dae0; font-family: "Segoe UI", sans-serif; font-size: 10pt; }}
-#appTitle {{ font-size: 12pt; font-weight: 600; color: #ffffff; }}
+# Colour palettes for the two themes. Every colour in the UI comes from here.
+THEMES = {
+    "dark": {
+        "bg": "#1b1d22", "border": "#2c2f37", "text": "#d7dae0", "strong": "#ffffff",
+        "muted": "#8b919c", "input": "#262930", "input_border": "#343842",
+        "btn": "#aeb3bd", "btn_hover": "#2a2d35", "accent": "#4f9dff", "on_accent": "#0d1117",
+        "scroll": "#3a3e48", "scroll_hover": "#4a4f5b",
+        "card": "#23262d", "card_hover": "#2a2e37", "card_hover_border": "#3c4250",
+        "copied": "#1f3a2a", "copied_border": "#3fb96f",
+        "code": "#e8c07d", "error": "#ff7b72",
+    },
+    "light": {
+        "bg": "#f6f7f9", "border": "#d9dce3", "text": "#24292f", "strong": "#0d1117",
+        "muted": "#6a737d", "input": "#ffffff", "input_border": "#cfd4dc",
+        "btn": "#57606a", "btn_hover": "#e6e9ee", "accent": "#0969da", "on_accent": "#ffffff",
+        "scroll": "#c4c9d2", "scroll_hover": "#aab0bb",
+        "card": "#ffffff", "card_hover": "#f0f4fa", "card_hover_border": "#bfcde0",
+        "copied": "#e3f6ea", "copied_border": "#2da44e",
+        "code": "#9a4d00", "error": "#cf222e",
+    },
+}
+
+
+def build_style(t: dict) -> str:
+    return f"""
+#panel {{ background: {t['bg']}; border-left: 1px solid {t['border']}; border-right: 1px solid {t['border']}; }}
+QWidget {{ color: {t['text']}; font-family: "Segoe UI", sans-serif; font-size: 10pt; }}
+#appTitle {{ font-size: 12pt; font-weight: 600; color: {t['strong']}; }}
 QLineEdit {{
-    background: #262930; border: 1px solid #343842; border-radius: 6px;
-    padding: 7px 10px; selection-background-color: {ACCENT};
+    background: {t['input']}; border: 1px solid {t['input_border']}; border-radius: 6px;
+    padding: 7px 10px; selection-background-color: {t['accent']}; selection-color: {t['on_accent']};
 }}
-QLineEdit:focus {{ border-color: {ACCENT}; }}
+QLineEdit:focus {{ border-color: {t['accent']}; }}
 QToolButton {{
     background: transparent; border: 1px solid transparent; border-radius: 5px;
-    padding: 3px 8px; color: #aeb3bd;
+    padding: 3px 8px; color: {t['btn']};
 }}
-QToolButton:hover {{ background: #2a2d35; color: #ffffff; }}
-QToolButton:checked {{ background: {ACCENT}; color: #0d1117; }}
+QToolButton:hover {{ background: {t['btn_hover']}; color: {t['strong']}; }}
+QToolButton:checked {{ background: {t['accent']}; color: {t['on_accent']}; }}
+#themeBtn {{ font-family: "Segoe UI Symbol", "Segoe UI"; font-size: 12pt; padding: 0px 7px; }}
+#hideBtn {{ font-size: 12pt; font-weight: 700; padding: 0px 8px; }}
+#closeBtn:hover {{ background: #e5534b; color: #ffffff; }}
 QTabWidget::pane {{ border: none; }}
 QTabBar::tab {{
-    background: transparent; color: #8b919c; padding: 7px 10px;
+    background: transparent; color: {t['muted']}; padding: 7px 10px;
     border-bottom: 2px solid transparent; margin-right: 2px;
 }}
-QTabBar::tab:selected {{ color: #ffffff; border-bottom-color: {ACCENT}; }}
-QTabBar::tab:hover {{ color: #ffffff; }}
+QTabBar::tab:selected {{ color: {t['strong']}; border-bottom-color: {t['accent']}; }}
+QTabBar::tab:hover {{ color: {t['strong']}; }}
 QScrollArea, #tabBody {{ background: transparent; border: none; }}
 QScrollBar:vertical {{ background: transparent; width: 8px; margin: 2px; }}
-QScrollBar::handle:vertical {{ background: #3a3e48; border-radius: 4px; min-height: 30px; }}
-QScrollBar::handle:vertical:hover {{ background: #4a4f5b; }}
+QScrollBar::handle:vertical {{ background: {t['scroll']}; border-radius: 4px; min-height: 30px; }}
+QScrollBar::handle:vertical:hover {{ background: {t['scroll_hover']}; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 #section {{
-    color: {ACCENT}; font-size: 8.5pt; font-weight: 700; letter-spacing: 1px;
+    color: {t['accent']}; font-size: 8.5pt; font-weight: 700; letter-spacing: 1px;
     padding: 12px 2px 4px 2px;
 }}
-#card {{ background: #23262d; border: 1px solid #2c2f37; border-radius: 7px; }}
-#card:hover {{ background: #2a2e37; border-color: #3c4250; }}
-#card[copied="true"] {{ background: #1f3a2a; border-color: #3fb96f; }}
-#cardTitle {{ color: #ffffff; font-weight: 600; }}
+#card {{ background: {t['card']}; border: 1px solid {t['border']}; border-radius: 7px; }}
+#card:hover {{ background: {t['card_hover']}; border-color: {t['card_hover_border']}; }}
+#card[copied="true"] {{ background: {t['copied']}; border-color: {t['copied_border']}; }}
+#cardTitle {{ color: {t['strong']}; font-weight: 600; }}
 #code {{
-    color: #e8c07d; background: transparent;
+    color: {t['code']}; background: transparent;
     font-family: "Cascadia Mono", "Cascadia Code", "JetBrains Mono", "Consolas", monospace;
     font-size: 9.5pt;
 }}
-#note {{ color: #8b919c; font-size: 9pt; }}
-#status {{ color: #8b919c; font-size: 8.5pt; padding: 4px 2px; }}
-#status[error="true"] {{ color: #ff7b72; }}
-#empty {{ color: #8b919c; padding: 30px; }}
+#note {{ color: {t['muted']}; font-size: 9pt; }}
+#status {{ color: {t['muted']}; font-size: 8.5pt; padding: 4px 2px; }}
+#status[error="true"] {{ color: {t['error']}; }}
+#empty {{ color: {t['muted']}; padding: 30px; }}
+QToolTip {{ color: {t['text']}; background: {t['card']}; border: 1px solid {t['border']}; padding: 4px; }}
 """
 
 
@@ -275,15 +303,15 @@ class EdgeIcon(DragArea):
             shape = QRectF(1, 1, w + ext, h - 2)
         else:
             shape = QRectF(-ext, 1, w + ext - 1, h - 2)
-        hovered = self.underMouse()
-        p.setBrush(QColor("#2a2e37" if hovered else "#1b1d22"))
-        p.setPen(QPen(QColor(ACCENT), 1.6))
+        t = self.dock.colors
+        p.setBrush(QColor(t["card_hover"] if self.underMouse() else t["bg"]))
+        p.setPen(QPen(QColor(t["accent"]), 1.6))
         p.drawRoundedRect(shape, 10, 10)
         font = QFont("Consolas")
         font.setPixelSize(max(10, int(h * 0.36)))
         font.setBold(True)
         p.setFont(font)
-        p.setPen(QColor(ACCENT))
+        p.setPen(QColor(t["accent"]))
         p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, ">_")
         p.end()
 
@@ -322,13 +350,13 @@ class Dock(QWidget):
         self.screen_name = ""
         self.edge = cfg.edge
         self.y_frac = min(1.0, max(0.0, float(cfg.icon_position)))
+        self.theme = self._default_theme()
         self._load_state()
 
         self.setWindowTitle("CheatDock")
         self.setWindowIcon(app_icon())
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setWindowOpacity(float(cfg.opacity))
-        self.setStyleSheet(STYLE)
 
         self.icon = EdgeIcon(self, self)
         self.icon.clicked.connect(lambda: self.expand(focus=True))
@@ -336,6 +364,7 @@ class Dock(QWidget):
         self.panel = QFrame(self)
         self.panel.setObjectName("panel")
         self._build_panel()
+        self.set_theme(self.theme, save=False)
 
         self.anim = QPropertyAnimation(self, b"geometry", self)
         self.anim.setDuration(170)
@@ -379,16 +408,25 @@ class Dock(QWidget):
         top.addWidget(title)
         top.addStretch(1)
 
+        self.theme_btn = QToolButton()
+        self.theme_btn.setObjectName("themeBtn")
+        self.theme_btn.clicked.connect(self.toggle_theme)
         self.pin_btn = QToolButton(text="Pin", checkable=True)
         self.pin_btn.setToolTip("Keep the panel open (Ctrl+P)")
         self.pin_btn.toggled.connect(self.set_pinned)
         reload_btn = QToolButton(text="Reload")
         reload_btn.setToolTip("Reload cheat sheets (F5)")
         reload_btn.clicked.connect(self.reload)
+        hide_btn = QToolButton(text="–")
+        hide_btn.setObjectName("hideBtn")
+        hide_btn.setToolTip("Hide to the edge icon (Esc)")
+        hide_btn.clicked.connect(lambda: self.collapse(force=True))
         close_btn = QToolButton(text="✕")
-        close_btn.setToolTip("Hide (Esc)")
-        close_btn.clicked.connect(lambda: self.collapse(force=True))
-        for b in (self.pin_btn, reload_btn, close_btn):
+        close_btn.setObjectName("closeBtn")
+        close_btn.setToolTip("Close CheatDock (Ctrl+Q)")
+        close_btn.clicked.connect(QApplication.quit)
+        QShortcut(QKeySequence("Ctrl+Q"), self, activated=QApplication.quit)
+        for b in (self.theme_btn, self.pin_btn, reload_btn, hide_btn, close_btn):
             top.addWidget(b)
         lay.addWidget(title_bar)
 
@@ -415,13 +453,14 @@ class Dock(QWidget):
         QShortcut(QKeySequence("Ctrl+F"), self, activated=self.focus_search)
         QShortcut(QKeySequence("F5"), self, activated=self.reload)
         QShortcut(QKeySequence("Ctrl+P"), self, activated=self.pin_btn.toggle)
+        QShortcut(QKeySequence("Ctrl+T"), self, activated=self.toggle_theme)
         for i in range(9):
             QShortcut(QKeySequence(f"Ctrl+{i + 1}"), self,
                       activated=lambda i=i: self.tabs.setCurrentIndex(min(i, self.tabs.count() - 1)))
 
     def _idle_status(self) -> None:
         hk = self.cfg.hotkey.upper() if self.cfg.hotkey else "—"
-        self._set_status(f"Click to copy · {hk} toggles · Ctrl+1..9 tabs · Esc hides")
+        self._set_status(f"Click to copy · {hk} toggles · Ctrl+T theme · Esc hides")
 
     def _set_status(self, text: str, error: bool = False) -> None:
         self.status.setText(text)
@@ -499,6 +538,37 @@ class Dock(QWidget):
         else:
             self.collapse(force=True)
 
+    # ---------- theme ----------
+    def _default_theme(self) -> str:
+        choice = str(self.cfg.theme).lower()
+        if choice in THEMES:
+            return choice
+        # "system": follow the Windows light/dark setting
+        try:
+            scheme = QGuiApplication.styleHints().colorScheme()
+            return "light" if scheme == Qt.ColorScheme.Light else "dark"
+        except AttributeError:
+            return "dark"
+
+    @property
+    def colors(self) -> dict:
+        return THEMES[self.theme]
+
+    def set_theme(self, theme: str, save: bool = True) -> None:
+        self.theme = theme if theme in THEMES else "dark"
+        self.setStyleSheet(build_style(self.colors))
+        light = self.theme == "light"
+        self.theme_btn.setText("☾" if light else "☀")  # moon / sun
+        self.theme_btn.setToolTip(
+            ("Switch to dark theme" if light else "Switch to light theme") + " (Ctrl+T)"
+        )
+        self.icon.update()
+        if save:
+            self._save_state()
+
+    def toggle_theme(self) -> None:
+        self.set_theme("light" if self.theme == "dark" else "dark")
+
     # ---------- position / state ----------
     def _screen(self):
         for s in QGuiApplication.screens():
@@ -513,6 +583,8 @@ class Dock(QWidget):
             if data.get("edge") in ("left", "right"):
                 self.edge = data["edge"]
             self.y_frac = min(1.0, max(0.0, float(data.get("y", self.y_frac))))
+            if data.get("theme") in THEMES:
+                self.theme = data["theme"]
         except (OSError, ValueError, TypeError):
             pass
 
@@ -520,7 +592,8 @@ class Dock(QWidget):
         try:
             path = state_file()
             path.parent.mkdir(parents=True, exist_ok=True)
-            data = {"screen": self.screen_name, "edge": self.edge, "y": round(self.y_frac, 4)}
+            data = {"screen": self.screen_name, "edge": self.edge,
+                    "y": round(self.y_frac, 4), "theme": self.theme}
             path.write_text(json.dumps(data), encoding="utf-8")
         except OSError:
             pass
@@ -692,6 +765,7 @@ def build_tray(app: QApplication, dock: Dock) -> QSystemTrayIcon:
 
     add("Show / hide", dock.toggle)
     add("Move to next screen", dock.move_to_next_screen)
+    add("Light / dark theme", dock.toggle_theme)
     add("Reload cheat sheets", dock.reload)
     add("Open cheat sheets folder",
         lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(base_dir() / "cheatsheets"))))

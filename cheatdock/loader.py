@@ -22,6 +22,7 @@ def base_dir() -> Path:
 
 @dataclass
 class Config:
+    theme: str = "dark"            # starting theme: "dark", "light" or "system"
     edge: str = "right"            # starting side: "right" or "left"
     width: int = 440               # expanded width in px
     icon_size: int = 40            # size of the edge icon in px

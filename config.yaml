@@ -2,6 +2,7 @@
 # Tip: drag the icon (or the panel's title bar) to move CheatDock to another
 # side or another monitor. That position is remembered automatically.
 
+theme: dark               # starting theme: dark | light | system (the ☀/☾ button switches it)
 edge: right               # starting side before you drag it: right | left
 width: 440                # width of the open panel, in pixels
 icon_size: 40             # size of the edge icon, in pixels

@@ -13,7 +13,8 @@ CheatDock stays out of the way as a small `>_` icon on the edge of your monitor.
 - **Click to copy** any command
 - **Pin** the panel open while you work through something
 - **Plain YAML files**: add a tab or a command by editing a text file, and the app reloads on its own
-- System tray icon, dark theme, no admin rights needed
+- **Light and dark themes**: the ☀ / ☾ button in the panel switches them, and your choice is remembered
+- System tray icon, no admin rights needed
 
 ## Quick start
 
@@ -46,8 +47,10 @@ Press `Win+R`, type `shell:startup` and put a shortcut to `CheatDock.exe` (or `r
 | `Enter` (in search) | Copy the first match |
 | `Ctrl+1` … `Ctrl+9` | Switch tab |
 | `Ctrl+P` | Pin / unpin |
+| `Ctrl+T` | Switch light / dark theme |
+| `Ctrl+Q` or ✕ | Close CheatDock |
 | `F5` | Reload cheat sheets |
-| `Esc` | Clear search, then hide |
+| `Esc` or – | Clear search, then hide |
 
 ## Adding your own commands
 
@@ -72,6 +75,7 @@ Use `code: |-` followed by an indented block. That way you never have to escape 
 Edit [`config.yaml`](config.yaml) and restart the app:
 
 ```yaml
+theme: dark               # dark | light | system
 edge: right               # starting side before you drag it
 width: 440
 icon_size: 40
@@ -83,7 +87,7 @@ hotkey: ctrl+alt+space    # e.g. ctrl+shift+k, win+alt+c, f9 ("" to disable)
 opacity: 0.97
 ```
 
-The position you drag it to (screen, side and height) is saved in `%LOCALAPPDATA%\CheatDock\state.json`. The tray menu also has **Move to next screen**.
+The position you drag it to (screen, side and height) and your theme choice are saved in `%LOCALAPPDATA%\CheatDock\state.json`. The tray menu also has **Move to next screen**.
 
 ## Building the .exe yourself
 
