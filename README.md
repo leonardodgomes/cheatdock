@@ -23,7 +23,7 @@ Grab `CheatDock-windows.zip` from the [Releases](../../releases) page, unzip it 
 Requires Python 3.10+.
 
 ```powershell
-git clone https://github.com/<your-user>/cheatdock.git
+git clone https://github.com/leonardodgomes/cheatdock.git
 cd cheatdock
 python -m venv .venv
 .venv\Scripts\activate
