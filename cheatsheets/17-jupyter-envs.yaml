@@ -1,0 +1,90 @@
+name: Jupyter & envs
+order: 17
+category: Tools
+description: Jupyter shortcuts and magics, plus pip, venv and conda environment commands.
+sections:
+  - name: Jupyter shortcuts
+    items:
+      - title: Run cells
+        code: |-
+          Shift + Enter   run and go to next
+          Ctrl + Enter    run, stay
+          Alt + Enter     run and insert below
+      - title: Command mode (press Esc first)
+        code: |-
+          A / B     insert cell above / below
+          D D       delete cell
+          M / Y     markdown / code cell
+          Z         undo delete
+      - title: Restart and run all
+        code: |-
+          Kernel > Restart & Run All
+          0 0   (command mode) restart kernel
+
+  - name: Jupyter magics
+    items:
+      - title: Time code
+        code: |-
+          %time result = slow()
+          %timeit sum(range(1000))
+          %%time   (first line of a cell)
+      - title: Reload changed modules automatically
+        code: |-
+          %load_ext autoreload
+          %autoreload 2
+      - title: Shell commands and pip
+        code: |-
+          !dir
+          %pip install pandas
+        note: Use %pip (not !pip) so it installs into the running kernel.
+      - title: Show all DataFrame columns
+        code: |-
+          import pandas as pd
+          pd.set_option("display.max_columns", None)
+      - title: Plots inside the notebook
+        code: |-
+          %matplotlib inline
+
+  - name: venv & pip
+    items:
+      - title: Create and activate (Windows)
+        code: |-
+          python -m venv .venv
+          .venv\Scripts\activate
+          deactivate
+      - title: Install / upgrade / remove
+        code: |-
+          pip install requests
+          pip install -U requests
+          pip uninstall requests
+      - title: Requirements file
+        code: |-
+          pip freeze > requirements.txt
+          pip install -r requirements.txt
+      - title: What's installed
+        code: |-
+          pip list
+          pip show pandas
+      - title: Use a venv in Jupyter
+        code: |-
+          pip install ipykernel
+          python -m ipykernel install --user --name myenv
+
+  - name: conda
+    items:
+      - title: Create and activate
+        code: |-
+          conda create -n data python=3.12 pandas
+          conda activate data
+          conda deactivate
+      - title: Install packages
+        code: |-
+          conda install -c conda-forge polars
+      - title: List and remove environments
+        code: |-
+          conda env list
+          conda env remove -n data
+      - title: Export / recreate
+        code: |-
+          conda env export > environment.yml
+          conda env create -f environment.yml

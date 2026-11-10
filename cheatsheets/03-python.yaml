@@ -1,5 +1,8 @@
 name: Python
 order: 3
+category: Programming
+description: Strings, collections, functions, files, errors and the standard library.
+default: true
 sections:
   - name: Environment & packages
     items:

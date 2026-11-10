@@ -1,0 +1,120 @@
+name: NumPy
+order: 11
+category: Data
+description: Create, index, reshape and calculate with arrays; random numbers and linear algebra.
+sections:
+  - name: Create arrays
+    items:
+      - title: Import and from a list
+        code: |-
+          import numpy as np
+          a = np.array([1, 2, 3])
+          m = np.array([[1, 2], [3, 4]])
+      - title: Ranges
+        code: |-
+          np.arange(0, 10, 2)        # 0 2 4 6 8
+          np.linspace(0, 1, 5)       # 5 evenly spaced
+      - title: Filled arrays
+        code: |-
+          np.zeros((3, 4))
+          np.ones(5)
+          np.full((2, 2), 7)
+          np.eye(3)
+      - title: Random numbers
+        code: |-
+          rng = np.random.default_rng(42)
+          rng.random((3, 3))
+          rng.integers(0, 10, size=5)
+          rng.normal(0, 1, 1000)
+
+  - name: Inspect & reshape
+    items:
+      - title: Shape, size, type
+        code: |-
+          a.shape   a.ndim   a.size   a.dtype
+      - title: Reshape / flatten
+        code: |-
+          a.reshape(3, 4)
+          a.reshape(-1, 1)    # column
+          a.ravel()
+      - title: Transpose / add axis
+        code: |-
+          m.T
+          a[:, np.newaxis]
+      - title: Join and split
+        code: |-
+          np.concatenate([a, b])
+          np.vstack([a, b])   np.hstack([a, b])
+          np.split(a, 3)
+      - title: Change type
+        code: |-
+          a.astype(float)
+
+  - name: Index & filter
+    items:
+      - title: Slicing
+        code: |-
+          a[0]   a[-1]   a[1:4]   a[::2]
+          m[0, 1]   m[:, 0]   m[1, :]
+      - title: Boolean filter
+        code: |-
+          a[a > 2]
+          a[(a > 1) & (a < 5)]
+      - title: Conditional values
+        code: |-
+          np.where(a > 0, "pos", "neg")
+      - title: Find positions
+        code: |-
+          np.argmax(a)   np.argmin(a)
+          np.nonzero(a > 2)
+      - title: Unique values and counts
+        code: |-
+          np.unique(a, return_counts=True)
+
+  - name: Math & statistics
+    items:
+      - title: Element-wise operations
+        code: |-
+          a + b   a * 2   a ** 2
+          np.sqrt(a)   np.log(a)   np.exp(a)
+      - title: Aggregations
+        code: |-
+          a.sum()   a.mean()   a.std()   a.min()   a.max()
+          m.sum(axis=0)   # per column
+          m.sum(axis=1)   # per row
+      - title: Percentiles
+        code: |-
+          np.percentile(a, [25, 50, 75])
+          np.median(a)
+      - title: Cumulative and rounding
+        code: |-
+          np.cumsum(a)
+          np.round(a, 2)
+          np.clip(a, 0, 100)
+      - title: Missing values
+        code: |-
+          np.isnan(a).sum()
+          np.nanmean(a)
+
+  - name: Linear algebra
+    items:
+      - title: Matrix multiply
+        code: |-
+          A @ B
+          np.dot(a, b)
+      - title: Inverse / determinant / solve
+        code: |-
+          np.linalg.inv(A)
+          np.linalg.det(A)
+          np.linalg.solve(A, b)
+
+  - name: Save & load
+    items:
+      - title: NumPy files
+        code: |-
+          np.save("arr.npy", a)
+          a = np.load("arr.npy")
+      - title: Text / CSV
+        code: |-
+          np.savetxt("arr.csv", a, delimiter=",")
+          a = np.loadtxt("arr.csv", delimiter=",")

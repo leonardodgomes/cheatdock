@@ -1,0 +1,111 @@
+name: VS Code
+order: 16
+category: Tools
+description: Keyboard shortcuts for editing, multi-cursor, navigation, terminal and search in VS Code.
+sections:
+  - name: General
+    items:
+      - title: Command palette
+        code: |-
+          Ctrl + Shift + P
+      - title: Open file by name
+        code: |-
+          Ctrl + P
+      - title: Toggle sidebar / terminal
+        code: |-
+          Ctrl + B
+          Ctrl + `
+      - title: Settings / keyboard shortcuts
+        code: |-
+          Ctrl + ,
+          Ctrl + K  Ctrl + S
+      - title: Zen mode
+        code: |-
+          Ctrl + K  Z
+
+  - name: Editing
+    items:
+      - title: Move / copy line
+        code: |-
+          Alt + ↑ / ↓
+          Shift + Alt + ↑ / ↓
+      - title: Delete line
+        code: |-
+          Ctrl + Shift + K
+      - title: Comment line / block
+        code: |-
+          Ctrl + /
+          Shift + Alt + A
+      - title: Format document
+        code: |-
+          Shift + Alt + F
+      - title: Indent / outdent
+        code: |-
+          Ctrl + ] / Ctrl + [
+      - title: Fold / unfold
+        code: |-
+          Ctrl + Shift + [ / ]
+
+  - name: Multi-cursor & selection
+    items:
+      - title: Select next occurrence
+        code: |-
+          Ctrl + D
+      - title: Select all occurrences
+        code: |-
+          Ctrl + Shift + L
+      - title: Add cursor above / below
+        code: |-
+          Ctrl + Alt + ↑ / ↓
+      - title: Add cursor with mouse
+        code: |-
+          Alt + Click
+      - title: Column (box) selection
+        code: |-
+          Shift + Alt + drag
+      - title: Expand selection
+        code: |-
+          Shift + Alt + →
+
+  - name: Navigation
+    items:
+      - title: Go to definition / references
+        code: |-
+          F12
+          Shift + F12
+      - title: Go to symbol / line
+        code: |-
+          Ctrl + Shift + O
+          Ctrl + G
+      - title: Back / forward
+        code: |-
+          Alt + ← / →
+      - title: Rename symbol
+        code: |-
+          F2
+      - title: Quick fix
+        code: |-
+          Ctrl + .
+      - title: Split editor / switch groups
+        code: |-
+          Ctrl + \
+          Ctrl + 1 / 2 / 3
+
+  - name: Search & run
+    items:
+      - title: Find / replace
+        code: |-
+          Ctrl + F
+          Ctrl + H
+      - title: Search in all files
+        code: |-
+          Ctrl + Shift + F
+      - title: Run / debug
+        code: |-
+          F5             start debugging
+          Ctrl + F5      run without debugging
+          F9             toggle breakpoint
+          F10 / F11      step over / into
+      - title: Open folder from terminal
+        code: |-
+          code .

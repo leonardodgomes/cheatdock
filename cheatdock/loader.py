@@ -51,6 +51,9 @@ class Item:
     title: str
     code: str
     note: str = ""
+    key: str = ""        # "<sheet id>::<title>", used for favorites and usage counts
+    sheet_name: str = ""
+    section: str = ""
 
 
 @dataclass
@@ -61,13 +64,27 @@ class Section:
 
 @dataclass
 class Sheet:
+    id: str              # file name without the "NN-" prefix, e.g. "powershell"
     name: str
     order: int
+    category: str = "Other"
+    description: str = ""
+    default: bool = False  # enabled before the user runs the setup
     sections: list[Section] = field(default_factory=list)
 
     @property
     def count(self) -> int:
         return sum(len(s.items) for s in self.sections)
+
+    @property
+    def items(self) -> list[Item]:
+        return [it for s in self.sections for it in s.items]
+
+
+def sheet_id(file: Path) -> str:
+    stem = file.stem.lower()
+    head, _, rest = stem.partition("-")
+    return rest if head.isdigit() and rest else stem
 
 
 def load_sheets(folder: Path | None = None) -> tuple[list[Sheet], list[str]]:
@@ -79,17 +96,25 @@ def load_sheets(folder: Path | None = None) -> tuple[list[Sheet], list[str]]:
         try:
             data = yaml.safe_load(file.read_text(encoding="utf-8")) or {}
             sheet = Sheet(
+                id=sheet_id(file),
                 name=str(data.get("name", file.stem)),
                 order=int(data.get("order", 100)),
+                category=str(data.get("category", "Other")),
+                description=str(data.get("description", "") or "").strip(),
+                default=bool(data.get("default", False)),
             )
             for sec in data.get("sections", []) or []:
                 section = Section(name=str(sec.get("name", "")))
                 for it in sec.get("items", []) or []:
+                    title = str(it.get("title", "")).strip()
                     section.items.append(
                         Item(
-                            title=str(it.get("title", "")).strip(),
+                            title=title,
                             code=str(it.get("code", "")).rstrip("\n"),
                             note=str(it.get("note", "") or "").strip(),
+                            key=f"{sheet.id}::{title}",
+                            sheet_name=sheet.name,
+                            section=section.name,
                         )
                     )
                 sheet.sections.append(section)

@@ -1,5 +1,8 @@
 name: SQL
 order: 2
+category: Data
+description: Queries, joins, aggregation, CTEs, window functions and table changes.
+default: true
 sections:
   - name: Querying
     items:

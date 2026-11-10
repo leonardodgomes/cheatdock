@@ -1,0 +1,109 @@
+name: Power BI DAX
+order: 13
+category: Data
+description: Measures, CALCULATE, filters, time intelligence and common Power BI patterns.
+sections:
+  - name: Basic measures
+    items:
+      - title: Sum, count, average
+        code: |-
+          Total Sales = SUM(Sales[Amount])
+          Orders = COUNTROWS(Sales)
+          Customers = DISTINCTCOUNT(Sales[CustomerID])
+          Avg Ticket = AVERAGE(Sales[Amount])
+      - title: Safe division
+        code: |-
+          Margin % = DIVIDE([Profit], [Total Sales], 0)
+      - title: Row-by-row calculation (iterator)
+        code: |-
+          Revenue = SUMX(Sales, Sales[Qty] * Sales[Price])
+      - title: Variables
+        code: |-
+          Growth % =
+          VAR cur = [Total Sales]
+          VAR prev = [Sales LY]
+          RETURN DIVIDE(cur - prev, prev)
+
+  - name: CALCULATE & filters
+    items:
+      - title: Measure with a filter
+        code: |-
+          North Sales = CALCULATE([Total Sales], Region[Name] = "North")
+      - title: Filter with a condition on a table
+        code: |-
+          Big Orders = CALCULATE([Orders], FILTER(Sales, Sales[Amount] > 1000))
+      - title: Ignore filters (share of total)
+        code: |-
+          % of Total = DIVIDE([Total Sales], CALCULATE([Total Sales], ALL(Product)))
+      - title: Keep only some filters
+        code: |-
+          CALCULATE([Total Sales], ALLEXCEPT(Sales, Sales[Region]))
+      - title: Respect the page selection
+        code: |-
+          CALCULATE([Total Sales], ALLSELECTED(Product))
+      - title: Use an inactive relationship
+        code: |-
+          CALCULATE([Total Sales], USERELATIONSHIP(Sales[ShipDate], 'Date'[Date]))
+
+  - name: Time intelligence
+    items:
+      - title: Year to date / month to date
+        code: |-
+          Sales YTD = TOTALYTD([Total Sales], 'Date'[Date])
+          Sales MTD = TOTALMTD([Total Sales], 'Date'[Date])
+        note: Needs a date table marked as Date table.
+      - title: Same period last year
+        code: |-
+          Sales LY = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Date'[Date]))
+      - title: Previous month
+        code: |-
+          Sales PM = CALCULATE([Total Sales], PREVIOUSMONTH('Date'[Date]))
+      - title: Rolling 3 months
+        code: |-
+          Sales R3M =
+          CALCULATE([Total Sales],
+              DATESINPERIOD('Date'[Date], MAX('Date'[Date]), -3, MONTH))
+      - title: Date table
+        code: |-
+          Date =
+          ADDCOLUMNS(
+              CALENDAR(DATE(2020, 1, 1), DATE(2030, 12, 31)),
+              "Year", YEAR([Date]),
+              "Month", FORMAT([Date], "MMM"),
+              "MonthNum", MONTH([Date])
+          )
+
+  - name: Logic & text
+    items:
+      - title: IF and SWITCH
+        code: |-
+          Tier = IF([Total Sales] > 100000, "High", "Low")
+          Tier = SWITCH(TRUE(),
+              [Total Sales] > 100000, "High",
+              [Total Sales] > 10000, "Medium",
+              "Low")
+      - title: Selected value from a slicer
+        code: |-
+          Chosen = SELECTEDVALUE(Region[Name], "All regions")
+      - title: Show blank instead of 0
+        code: |-
+          IF([Total Sales] = 0, BLANK(), [Total Sales])
+      - title: Format and join text
+        code: |-
+          Label = "Sales: " & FORMAT([Total Sales], "#,##0")
+
+  - name: Ranking & tables
+    items:
+      - title: Rank products
+        code: |-
+          Rank = RANKX(ALL(Product[Name]), [Total Sales], , DESC, Dense)
+      - title: Top N
+        code: |-
+          Top 5 Sales = CALCULATE([Total Sales], TOPN(5, ALL(Product[Name]), [Total Sales]))
+      - title: Look up a value from another table
+        code: |-
+          Category = RELATED(Product[Category])
+        note: In a calculated column on the many side.
+      - title: Summary table
+        code: |-
+          SUMMARIZECOLUMNS(Product[Category], "Sales", [Total Sales])

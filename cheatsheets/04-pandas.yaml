@@ -1,5 +1,8 @@
 name: Pandas
 order: 4
+category: Data
+description: Read, clean, filter, group, merge and reshape DataFrames.
+default: true
 sections:
   - name: Read & write
     items:

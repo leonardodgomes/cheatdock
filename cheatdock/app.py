@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from . import __version__
 from .hotkey import GlobalHotkey
 from .loader import Config, Item, Sheet, base_dir, load_config, load_sheets
+from .setup import SetupDialog
 
 ACCENT = "#4f9dff"  # tray / taskbar icon colour
 
@@ -46,6 +47,26 @@ THEMES = {
         "code": "#9a4d00", "error": "#cf222e",
     },
 }
+
+
+def check_mark(color: str) -> str:
+    """Draw a small check-mark PNG for checkboxes and return its path for the stylesheet."""
+    import tempfile
+
+    path = Path(tempfile.gettempdir()) / f"cheatdock_check_{color.strip('#')}_v2.png"
+    if not path.exists():
+        pix = QPixmap(30, 30)
+        pix.fill(Qt.GlobalColor.transparent)
+        p = QPainter(pix)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor(color), 4.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        p.setPen(pen)
+        p.drawPolyline([QPoint(7, 16), QPoint(13, 22), QPoint(24, 9)])
+        p.end()
+        pix.save(str(path), "PNG")
+    return path.as_posix()
 
 
 def build_style(t: dict) -> str:
@@ -97,6 +118,40 @@ QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 #status {{ color: {t['muted']}; font-size: 8.5pt; padding: 4px 2px; }}
 #status[error="true"] {{ color: {t['error']}; }}
 #empty {{ color: {t['muted']}; padding: 30px; }}
+#star {{ background: transparent; border: none; padding: 0px 2px; font-size: 13pt; color: {t['muted']}; }}
+#star:hover {{ background: transparent; color: #e3a008; }}
+#star:checked {{ background: transparent; color: #e3a008; }}
+#source {{ color: {t['accent']}; font-size: 8.5pt; }}
+#hint {{ color: {t['muted']}; padding: 24px 10px; font-size: 9.5pt; }}
+#gearBtn {{ font-family: "Segoe UI Symbol", "Segoe UI"; font-size: 12pt; padding: 0px 7px; }}
+QDialog#setup {{ background: {t['bg']}; }}
+#setupTitle {{ font-size: 16pt; font-weight: 600; color: {t['strong']}; }}
+#tile {{ background: {t['card']}; border: 1px solid {t['border']}; border-radius: 8px; }}
+#tile:hover {{ border-color: {t['card_hover_border']}; }}
+#tile[checked="true"] {{ background: {t['card_hover']}; border: 1px solid {t['accent']}; }}
+#tileName {{ font-weight: 600; color: {t['strong']}; spacing: 8px; }}
+#tileDesc, #tileCount {{ color: {t['muted']}; font-size: 9pt; }}
+QCheckBox::indicator {{
+    width: 15px; height: 15px; border: 1px solid {t['input_border']};
+    border-radius: 4px; background: {t['input']};
+}}
+QCheckBox::indicator:checked {{
+    background: {t['accent']}; border-color: {t['accent']}; image: url({check_mark(t['on_accent'])});
+}}
+QListWidget {{
+    background: {t['input']}; border: 1px solid {t['input_border']}; border-radius: 6px;
+    padding: 4px; outline: 0;
+}}
+QListWidget::item {{ padding: 7px 8px; border-radius: 5px; color: {t['text']}; }}
+QListWidget::item:hover {{ background: {t['btn_hover']}; }}
+QListWidget::item:selected {{ background: {t['accent']}; color: {t['on_accent']}; }}
+QPushButton {{
+    background: {t['card']}; color: {t['text']}; border: 1px solid {t['input_border']};
+    border-radius: 6px; padding: 7px 16px;
+}}
+QPushButton:hover {{ border-color: {t['accent']}; }}
+QPushButton#primary {{ background: {t['accent']}; color: {t['on_accent']}; border-color: {t['accent']}; font-weight: 600; }}
+QPushButton:disabled {{ color: {t['muted']}; background: {t['btn_hover']}; border-color: {t['border']}; }}
 QToolTip {{ color: {t['text']}; background: {t['card']}; border: 1px solid {t['border']}; padding: 4px; }}
 """
 
@@ -136,11 +191,12 @@ def repolish(widget: QWidget) -> None:
 
 
 class Card(QFrame):
-    """One command. Click to copy its code."""
+    """One command. Click to copy its code, click the star to add it to Favorites."""
 
     clicked = Signal(object)
+    star_toggled = Signal(object, bool)
 
-    def __init__(self, item: Item, section: str, font: QFont):
+    def __init__(self, item: Item, font: QFont, starred: bool = False, show_source: bool = False):
         super().__init__()
         self.item = item
         self.setObjectName("card")
@@ -148,13 +204,28 @@ class Card(QFrame):
         self.setToolTip("Click to copy")
 
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(11, 8, 11, 9)
+        lay.setContentsMargins(11, 7, 7, 9)
         lay.setSpacing(4)
 
+        head = QHBoxLayout()
+        head.setSpacing(4)
         title = QLabel(item.title)
         title.setObjectName("cardTitle")
         title.setWordWrap(True)
-        lay.addWidget(title)
+        head.addWidget(title, 1)
+        self.star = QToolButton()
+        self.star.setObjectName("star")
+        self.star.setCheckable(True)
+        self.star.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.set_starred(starred)
+        self.star.toggled.connect(self._on_star)
+        head.addWidget(self.star, 0, Qt.AlignmentFlag.AlignTop)
+        lay.addLayout(head)
+
+        if show_source:
+            src = QLabel(f"{item.sheet_name} · {item.section}")
+            src.setObjectName("source")
+            lay.addWidget(src)
 
         code = QLabel(item.code)
         code.setObjectName("code")
@@ -169,7 +240,20 @@ class Card(QFrame):
             note.setWordWrap(True)
             lay.addWidget(note)
 
-        self.haystack = " ".join([item.title, item.code, item.note, section]).lower()
+        self.haystack = " ".join(
+            [item.title, item.code, item.note, item.section, item.sheet_name]
+        ).lower()
+
+    def set_starred(self, on: bool) -> None:
+        self.star.blockSignals(True)
+        self.star.setChecked(on)
+        self.star.blockSignals(False)
+        self.star.setText("★" if on else "☆")
+        self.star.setToolTip("Remove from Favorites" if on else "Add to Favorites")
+
+    def _on_star(self, on: bool) -> None:
+        self.set_starred(on)
+        self.star_toggled.emit(self, on)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
@@ -187,11 +271,13 @@ class Card(QFrame):
 
 
 class SheetTab(QScrollArea):
-    """Scrollable list of the sections and cards of one cheat sheet."""
+    """Scrollable list of sections and cards (one cheat sheet, or Favorites)."""
 
-    def __init__(self, sheet: Sheet, font: QFont, on_click):
+    def __init__(self, title: str, sections: list[tuple[str, list[Item]]], dock: "Dock",
+                 show_source: bool = False, hint: str = ""):
         super().__init__()
-        self.sheet = sheet
+        self.title = title
+        self.hint = hint
         self.setWidgetResizable(True)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
@@ -202,25 +288,31 @@ class SheetTab(QScrollArea):
         lay.setSpacing(6)
 
         self.groups: list[tuple[QLabel, list[Card]]] = []
-        for section in sheet.sections:
-            header = QLabel(section.name.upper())
+        for name, items in sections:
+            if not items:
+                continue
+            header = QLabel(name.upper())
             header.setObjectName("section")
             lay.addWidget(header)
             cards = []
-            for item in section.items:
-                card = Card(item, section.name, font)
-                card.clicked.connect(on_click)
+            for item in items:
+                card = dock.make_card(item, show_source)
                 lay.addWidget(card)
                 cards.append(card)
             self.groups.append((header, cards))
 
-        self.empty = QLabel("No matches in this tab")
-        self.empty.setObjectName("empty")
+        self.empty = QLabel()
+        self.empty.setObjectName("hint" if hint else "empty")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty.setWordWrap(True)
         self.empty.hide()
         lay.addWidget(self.empty)
         lay.addStretch(1)
         self.setWidget(body)
+        self.apply_filter([])
+
+    def cards(self) -> list[Card]:
+        return [c for _, cards in self.groups for c in cards]
 
     def apply_filter(self, terms: list[str]) -> int:
         total = 0
@@ -232,16 +324,16 @@ class SheetTab(QScrollArea):
                 shown += ok
             header.setVisible(shown > 0)
             total += shown
+        self.empty.setText(self.hint if (self.hint and not terms) else "No matches in this tab")
         self.empty.setVisible(total == 0)
         if terms:
             self.verticalScrollBar().setValue(0)
         return total
 
     def first_visible(self) -> Card | None:
-        for _, cards in self.groups:
-            for card in cards:
-                if card.isVisibleTo(self):
-                    return card
+        for card in self.cards():
+            if card.isVisibleTo(self):
+                return card
         return None
 
 
@@ -345,6 +437,15 @@ class Dock(QWidget):
         self._drag_offset = QPoint()
         self.mono = mono_font()
         self.tabs_by_sheet: list[SheetTab] = []
+        self.all_sheets: list[Sheet] = []
+        self.items_by_key: dict[str, Item] = {}
+        self.cards_by_key: dict[str, list[Card]] = {}
+
+        # Personal choices, saved in state.json.
+        self.enabled: list[str] | None = None   # None = setup never done
+        self.favorites: list[str] = []
+        self.usage: dict[str, int] = {}
+        self._fav_dirty = False
 
         # Position: which screen, which side, and how far down the icon sits.
         self.screen_name = ""
@@ -382,6 +483,8 @@ class Dock(QWidget):
 
         # Reload automatically when a cheat sheet file changes.
         self.watcher = QFileSystemWatcher(self)
+        self.save_timer = QTimer(self, singleShot=True, interval=1500)
+        self.save_timer.timeout.connect(self._save_state)
         self.reload_timer = QTimer(self, singleShot=True, interval=300)
         self.reload_timer.timeout.connect(self.reload)
         self.watcher.directoryChanged.connect(lambda _: self.reload_timer.start())
@@ -408,6 +511,11 @@ class Dock(QWidget):
         top.addWidget(title)
         top.addStretch(1)
 
+        gear_btn = QToolButton(text="⚙")
+        gear_btn.setObjectName("gearBtn")
+        gear_btn.setToolTip("Choose cheat sheets (Ctrl+,)")
+        gear_btn.clicked.connect(lambda: self.open_setup())
+        QShortcut(QKeySequence("Ctrl+,"), self, activated=lambda: self.open_setup())
         self.theme_btn = QToolButton()
         self.theme_btn.setObjectName("themeBtn")
         self.theme_btn.clicked.connect(self.toggle_theme)
@@ -426,7 +534,7 @@ class Dock(QWidget):
         close_btn.setToolTip("Close CheatDock (Ctrl+Q)")
         close_btn.clicked.connect(QApplication.quit)
         QShortcut(QKeySequence("Ctrl+Q"), self, activated=QApplication.quit)
-        for b in (self.theme_btn, self.pin_btn, reload_btn, hide_btn, close_btn):
+        for b in (gear_btn, self.theme_btn, self.pin_btn, reload_btn, hide_btn, close_btn):
             top.addWidget(b)
         lay.addWidget(title_bar)
 
@@ -467,20 +575,112 @@ class Dock(QWidget):
         self.status.setProperty("error", error)
         repolish(self.status)
 
+    # ---------- cheat sheets, favorites, usage ----------
+    def make_card(self, item: Item, show_source: bool = False) -> Card:
+        card = Card(item, self.mono, item.key in self.favorites, show_source)
+        card.clicked.connect(self.copy_card)
+        card.star_toggled.connect(self.on_star)
+        self.cards_by_key.setdefault(item.key, []).append(card)
+        return card
+
+    def _forget_cards(self, tab: SheetTab) -> None:
+        for card in tab.cards():
+            lst = self.cards_by_key.get(card.item.key, [])
+            if card in lst:
+                lst.remove(card)
+
+    def active_ids(self) -> list[str]:
+        known = {s.id for s in self.all_sheets}
+        if self.enabled is None:
+            return [s.id for s in self.all_sheets if s.default] or [s.id for s in self.all_sheets[:4]]
+        return [sid for sid in self.enabled if sid in known]
+
+    def _favorites_tab(self) -> SheetTab:
+        favs = [self.items_by_key[k] for k in self.favorites if k in self.items_by_key]
+        top = sorted(
+            (k for k, n in self.usage.items() if n >= 2 and k in self.items_by_key),
+            key=lambda k: -self.usage[k],
+        )[:10]
+        used = [self.items_by_key[k] for k in top]
+        hint = ("No favorites yet.\n\nClick ☆ on any command to keep it here.\n"
+                "Commands you copy often also show up here under Most used.")
+        return SheetTab("★ Favorites", [("Favorites", favs), ("Most used", used)],
+                        self, show_source=True, hint=hint)
+
+    def refresh_favorites(self) -> None:
+        if not self.tabs_by_sheet:
+            return
+        current = self.tabs.currentIndex()
+        old = self.tabs_by_sheet[0]
+        self._forget_cards(old)
+        new = self._favorites_tab()
+        self.tabs_by_sheet[0] = new
+        self.tabs.removeTab(0)
+        self.tabs.insertTab(0, new, new.title)
+        old.deleteLater()
+        self.tabs.setCurrentIndex(max(0, current))
+        self._fav_dirty = False
+        self.apply_filter(self.search.text())
+
+    def on_star(self, card: Card, on: bool) -> None:
+        key = card.item.key
+        if on and key not in self.favorites:
+            self.favorites.append(key)
+        elif not on and key in self.favorites:
+            self.favorites.remove(key)
+        for other in self.cards_by_key.get(key, []):
+            other.set_starred(on)
+        self._save_state()
+        self._set_status(("Added to" if on else "Removed from") + f" Favorites: {card.item.title}")
+        QTimer.singleShot(2500, self._idle_status)
+        # Rebuild after this click finishes (the clicked card may be deleted).
+        QTimer.singleShot(0, self.refresh_favorites)
+
+    def open_setup(self, first_run: bool = False) -> None:
+        self.collapse_timer.stop()
+        was_pinned = self.pinned
+        self.pinned = True  # keep the panel from closing behind the dialog
+        enabled = self.active_ids() if not first_run else [s.id for s in self.all_sheets if s.default]
+        dlg = SetupDialog(self.all_sheets, enabled, build_style(self.colors), first_run)
+        area = self._screen().availableGeometry()
+        dlg.move(area.center() - dlg.rect().center())
+        ok = dlg.exec() == SetupDialog.DialogCode.Accepted
+        self.pinned = was_pinned
+        if ok:
+            self.enabled = dlg.selected_ids()
+        elif self.enabled is None:
+            self.enabled = enabled  # "Skip for now" keeps the defaults
+        else:
+            return
+        self._save_state()
+        self.reload()
+        self._set_status(f"{len(self.active_ids())} cheat sheets enabled · ⚙ to change")
+        QTimer.singleShot(3000, self._idle_status)
+
     def reload(self) -> None:
-        current = self.tabs.tabText(self.tabs.currentIndex()).split(" (")[0] if self.tabs.count() else ""
+        current = self.tabs_by_sheet[self.tabs.currentIndex()].title if self.tabs_by_sheet else ""
         sheets, errors = load_sheets()
+        self.all_sheets = sheets
+        self.items_by_key = {it.key: it for sh in sheets for it in sh.items}
+        by_id = {sh.id: sh for sh in sheets}
 
         self.tabs.clear()
         for tab in self.tabs_by_sheet:
             tab.deleteLater()
         self.tabs_by_sheet = []
-        for sheet in sheets:
-            tab = SheetTab(sheet, self.mono, self.copy_card)
+        self.cards_by_key = {}
+
+        tabs = [self._favorites_tab()]
+        for sid in self.active_ids():
+            sheet = by_id[sid]
+            tabs.append(SheetTab(sheet.name, [(sec.name, sec.items) for sec in sheet.sections], self))
+        for tab in tabs:
             self.tabs_by_sheet.append(tab)
-            self.tabs.addTab(tab, sheet.name)
-            if sheet.name == current:
-                self.tabs.setCurrentWidget(tab)
+            self.tabs.addTab(tab, tab.title)
+        start = 1 if len(tabs) > 1 else 0
+        titles = [t.title for t in tabs]
+        self.tabs.setCurrentIndex(titles.index(current) if current in titles else start)
+        self._fav_dirty = False
 
         folder = base_dir() / "cheatsheets"
         if self.watcher.files():
@@ -506,7 +706,7 @@ class Dock(QWidget):
         for i, tab in enumerate(self.tabs_by_sheet):
             n = tab.apply_filter(terms)
             counts.append(n)
-            self.tabs.setTabText(i, f"{tab.sheet.name} ({n})" if terms else tab.sheet.name)
+            self.tabs.setTabText(i, f"{tab.title} ({n})" if terms else tab.title)
         # Jump to a tab that has results if the current one has none.
         idx = self.tabs.currentIndex()
         if terms and 0 <= idx < len(counts) and counts[idx] == 0:
@@ -518,6 +718,10 @@ class Dock(QWidget):
     def copy_card(self, card: Card) -> None:
         QGuiApplication.clipboard().setText(card.item.code)
         card.flash()
+        key = card.item.key
+        self.usage[key] = self.usage.get(key, 0) + 1
+        self._fav_dirty = True  # "Most used" is refreshed when the panel closes
+        self.save_timer.start()
         self._set_status(f"Copied: {card.item.title}")
         QTimer.singleShot(2500, self._idle_status)
 
@@ -585,6 +789,12 @@ class Dock(QWidget):
             self.y_frac = min(1.0, max(0.0, float(data.get("y", self.y_frac))))
             if data.get("theme") in THEMES:
                 self.theme = data["theme"]
+            if isinstance(data.get("enabled"), list):
+                self.enabled = [str(x) for x in data["enabled"]]
+            if isinstance(data.get("favorites"), list):
+                self.favorites = [str(x) for x in data["favorites"]]
+            if isinstance(data.get("usage"), dict):
+                self.usage = {str(k): int(v) for k, v in data["usage"].items()}
         except (OSError, ValueError, TypeError):
             pass
 
@@ -593,8 +803,9 @@ class Dock(QWidget):
             path = state_file()
             path.parent.mkdir(parents=True, exist_ok=True)
             data = {"screen": self.screen_name, "edge": self.edge,
-                    "y": round(self.y_frac, 4), "theme": self.theme}
-            path.write_text(json.dumps(data), encoding="utf-8")
+                    "y": round(self.y_frac, 4), "theme": self.theme,
+                    "enabled": self.enabled, "favorites": self.favorites, "usage": self.usage}
+            path.write_text(json.dumps(data, indent=1), encoding="utf-8")
         except OSError:
             pass
 
@@ -680,6 +891,8 @@ class Dock(QWidget):
 
     def _on_anim_done(self) -> None:
         if not self.expanded and self.mode == "panel" and not self.dragging:
+            if self._fav_dirty:
+                self.refresh_favorites()
             self.mode = "icon"
             self.setGeometry(self._target_rect("icon"))
             self._layout_children()
@@ -764,6 +977,7 @@ def build_tray(app: QApplication, dock: Dock) -> QSystemTrayIcon:
         return act
 
     add("Show / hide", dock.toggle)
+    add("Choose cheat sheets…", lambda: dock.open_setup())
     add("Move to next screen", dock.move_to_next_screen)
     add("Light / dark theme", dock.toggle_theme)
     add("Reload cheat sheets", dock.reload)
@@ -796,6 +1010,8 @@ def main() -> int:
     dock = Dock(cfg)
     dock.show()
     tray = build_tray(app, dock)  # noqa: F841 - keep a reference
+    if dock.enabled is None:
+        QTimer.singleShot(500, lambda: dock.open_setup(first_run=True))
 
     hotkey = None
     if cfg.hotkey:
@@ -805,6 +1021,7 @@ def main() -> int:
         hotkey.start()
         app.aboutToQuit.connect(hotkey.stop)
 
+    app.aboutToQuit.connect(dock._save_state)
     code = app.exec()
     lock.unlock()
     return code

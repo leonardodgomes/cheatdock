@@ -1,0 +1,147 @@
+name: Bash / Linux
+order: 6
+category: Shell & OS
+description: Navigate, find, grep, permissions, processes, archives and SSH on Linux or WSL.
+sections:
+  - name: Navigate & files
+    items:
+      - title: Where am I / list files
+        code: |-
+          pwd
+          ls -lah
+      - title: Change directory
+        code: |-
+          cd /var/log
+          cd ~      # home
+          cd -      # previous folder
+      - title: Create, copy, move, delete
+        code: |-
+          mkdir -p a/b/c
+          cp -r src/ backup/
+          mv old.txt new.txt
+          rm -rf build/
+      - title: Find files
+        code: |-
+          find . -name "*.csv" -type f
+          find . -mtime -1        # changed in last day
+      - title: Disk usage
+        code: |-
+          df -h
+          du -sh * | sort -h
+
+  - name: Read & search text
+    items:
+      - title: View files
+        code: |-
+          cat file.txt
+          less file.txt
+          head -n 20 file.txt
+          tail -f app.log
+      - title: Search text
+        code: |-
+          grep -rn "ERROR" ./logs
+          grep -i "error" app.log | wc -l
+      - title: Columns and counting
+        code: |-
+          cut -d',' -f1,3 data.csv
+          sort data.txt | uniq -c | sort -nr
+      - title: Replace text in a file
+        code: |-
+          sed -i 's/old/new/g' file.txt
+      - title: Print a column with awk
+        code: |-
+          awk -F',' '{print $2}' data.csv
+
+  - name: Pipes & redirects
+    items:
+      - title: Redirect output
+        code: |-
+          cmd > out.txt     # overwrite
+          cmd >> out.txt    # append
+          cmd 2>&1 | tee log.txt
+      - title: Chain commands
+        code: |-
+          make && ./run     # only if first succeeds
+          cmd1 || echo "failed"
+      - title: Run on many files
+        code: |-
+          find . -name "*.log" | xargs gzip
+
+  - name: Permissions & users
+    items:
+      - title: Change permissions
+        code: |-
+          chmod +x script.sh
+          chmod 644 file.txt
+      - title: Change owner
+        code: |-
+          sudo chown user:group file.txt
+      - title: Run as admin
+        code: |-
+          sudo command
+          sudo -i
+
+  - name: Processes & system
+    items:
+      - title: Running processes
+        code: |-
+          ps aux | grep python
+          top    # or htop
+      - title: Stop a process
+        code: |-
+          kill 1234
+          kill -9 1234
+          pkill -f "python app.py"
+      - title: Run in background
+        code: |-
+          nohup python app.py > app.log 2>&1 &
+      - title: Which program is using a port
+        code: |-
+          sudo lsof -i :8080
+          ss -tulpn
+      - title: Services (systemd)
+        code: |-
+          sudo systemctl status nginx
+          sudo systemctl restart nginx
+          journalctl -u nginx -f
+      - title: Install packages (Debian / Ubuntu)
+        code: |-
+          sudo apt update && sudo apt install -y git curl
+
+  - name: Archives & network
+    items:
+      - title: tar.gz
+        code: |-
+          tar -czf backup.tar.gz folder/
+          tar -xzf backup.tar.gz
+      - title: zip
+        code: |-
+          zip -r out.zip folder/
+          unzip out.zip -d dest/
+      - title: Download / call an API
+        code: |-
+          curl -O https://example.com/file.zip
+          curl -s https://api.github.com | jq .
+      - title: SSH and copy files
+        code: |-
+          ssh user@server
+          scp file.txt user@server:/tmp/
+          rsync -avz folder/ user@server:/data/
+
+  - name: Scripting
+    items:
+      - title: Script skeleton
+        code: |-
+          #!/usr/bin/env bash
+          set -euo pipefail
+          name="${1:-world}"
+          echo "Hello $name"
+      - title: Loop and if
+        code: |-
+          for f in *.csv; do
+            if [[ -s "$f" ]]; then echo "$f"; fi
+          done
+      - title: Environment variables
+        code: |-
+          export API_KEY="..."
+          echo "$PATH"

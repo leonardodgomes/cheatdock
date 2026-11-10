@@ -1,0 +1,97 @@
+name: Windows shortcuts
+order: 8
+category: Shell & OS
+description: Keyboard shortcuts for windows, desktops, screenshots, Explorer and system tools.
+sections:
+  - name: Windows & desktops
+    items:
+      - title: Snap window left / right / maximize
+        code: |-
+          Win + ← / → / ↑
+      - title: Move window to the other monitor
+        code: |-
+          Win + Shift + ← / →
+      - title: Show desktop
+        code: |-
+          Win + D
+      - title: Switch apps / task view
+        code: |-
+          Alt + Tab
+          Win + Tab
+      - title: New / switch virtual desktop
+        code: |-
+          Win + Ctrl + D
+          Win + Ctrl + ← / →
+      - title: Snap layouts
+        code: |-
+          Win + Z
+
+  - name: Screenshots & clipboard
+    items:
+      - title: Screenshot a region
+        code: |-
+          Win + Shift + S
+      - title: Clipboard history
+        code: |-
+          Win + V
+        note: Turn it on the first time you press it.
+      - title: Emoji and symbols
+        code: |-
+          Win + .
+      - title: Record the screen
+        code: |-
+          Win + Alt + R
+
+  - name: System
+    items:
+      - title: Run dialog
+        code: |-
+          Win + R
+      - title: File Explorer / Settings
+        code: |-
+          Win + E
+          Win + I
+      - title: Task Manager
+        code: |-
+          Ctrl + Shift + Esc
+      - title: Lock the PC
+        code: |-
+          Win + L
+      - title: Power user menu
+        code: |-
+          Win + X
+      - title: Project to a second screen
+        code: |-
+          Win + P
+
+  - name: Explorer & text
+    items:
+      - title: Rename / properties
+        code: |-
+          F2
+          Alt + Enter
+      - title: New folder
+        code: |-
+          Ctrl + Shift + N
+      - title: Go to address bar
+        code: |-
+          Alt + D
+      - title: Delete without Recycle Bin
+        code: |-
+          Shift + Delete
+      - title: Move word by word / select
+        code: |-
+          Ctrl + ← / →
+          Ctrl + Shift + ← / →
+
+  - name: Run dialog shortcuts (Win + R)
+    items:
+      - title: Useful commands
+        code: |-
+          shell:startup
+          %temp%
+          appwiz.cpl
+          devmgmt.msc
+          services.msc
+          control
+        note: Startup folder, temp files, uninstall programs, devices, services, Control Panel.

@@ -1,0 +1,112 @@
+name: Regex
+order: 10
+category: Programming
+description: Regular expression syntax and ready-made patterns for emails, dates, numbers and more.
+sections:
+  - name: Characters
+    items:
+      - title: Character classes
+        code: |-
+          .     any character except newline
+          \d    digit          \D  not a digit
+          \w    word char      \W  not a word char
+          \s    whitespace     \S  not whitespace
+      - title: Sets and ranges
+        code: |-
+          [abc]     a, b or c
+          [^abc]    anything except a, b, c
+          [a-z0-9]  ranges
+      - title: Escape special characters
+        code: |-
+          \.  \*  \+  \?  \(  \)  \[  \]  \{  \}  \|  \\  \^  \$
+
+  - name: Quantifiers & anchors
+    items:
+      - title: Quantifiers
+        code: |-
+          *       0 or more
+          +       1 or more
+          ?       0 or 1
+          {3}     exactly 3
+          {2,5}   2 to 5
+          {2,}    2 or more
+      - title: Lazy (as few as possible)
+        code: |-
+          .*?   .+?   {2,5}?
+      - title: Anchors
+        code: |-
+          ^     start of line
+          $     end of line
+          \b    word boundary
+
+  - name: Groups & lookaround
+    items:
+      - title: Groups
+        code: |-
+          (abc)          capture group
+          (?:abc)        group without capturing
+          (?P<year>\d{4})  named group (Python)
+          (?<year>\d{4})   named group (JS, .NET)
+          a|b            a or b
+      - title: Back-reference
+        code: |-
+          (\w+)\s+\1     repeated word
+      - title: Lookahead / lookbehind
+        code: |-
+          \d+(?=€)       digits followed by €
+          (?<=\$)\d+     digits after $
+          foo(?!bar)     foo not followed by bar
+
+  - name: Common patterns
+    items:
+      - title: Email (simple)
+        code: |-
+          [\w.+-]+@[\w-]+\.[\w.-]+
+      - title: Date YYYY-MM-DD
+        code: |-
+          \d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])
+      - title: Date DD/MM/YYYY
+        code: |-
+          (0[1-9]|[12]\d|3[01])/(0[1-9]|1[0-2])/\d{4}
+      - title: Number with decimals
+        code: |-
+          -?\d+(?:[.,]\d+)?
+      - title: URL
+        code: |-
+          https?://[^\s/$.?#].[^\s]*
+      - title: IPv4 address
+        code: |-
+          \b(?:\d{1,3}\.){3}\d{1,3}\b
+      - title: Whitespace at start or end
+        code: |-
+          ^\s+|\s+$
+      - title: Brazilian CPF
+        code: |-
+          \d{3}\.\d{3}\.\d{3}-\d{2}
+
+  - name: Using regex in code
+    items:
+      - title: Python
+        code: |-
+          import re
+          re.findall(r"\d+", text)
+          re.sub(r"\s+", " ", text)
+          re.search(r"(\d{4})-(\d{2})", text).group(1)
+      - title: JavaScript
+        code: |-
+          text.match(/\d+/g)
+          text.replace(/\s+/g, " ")
+          /^\d{5}$/.test(zip)
+      - title: Pandas
+        code: |-
+          df["col"].str.extract(r"(\d{4})")
+          df["col"].str.contains(r"^abc", regex=True)
+      - title: PowerShell
+        code: |-
+          "abc123" -match "\d+"; $Matches[0]
+          "a  b" -replace "\s+", " "
+      - title: Flags
+        code: |-
+          re.IGNORECASE / re.I    case-insensitive
+          re.MULTILINE / re.M     ^ $ per line
+          re.DOTALL / re.S        . matches newline

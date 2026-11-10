@@ -1,0 +1,98 @@
+name: R
+order: 15
+category: Data
+description: Base R essentials plus dplyr, tidyr and ggplot2 from the tidyverse.
+sections:
+  - name: Basics
+    items:
+      - title: Install and load packages
+        code: |-
+          install.packages("tidyverse")
+          library(tidyverse)
+      - title: Vectors and data frames
+        code: |-
+          x <- c(1, 2, 3)
+          df <- data.frame(name = c("Ana", "Rui"), age = c(30, 25))
+      - title: Inspect
+        code: |-
+          head(df)   str(df)   summary(df)   dim(df)   names(df)
+      - title: Select in base R
+        code: |-
+          df$age
+          df[df$age > 26, c("name", "age")]
+      - title: Function
+        code: |-
+          square <- function(x) x^2
+      - title: Help
+        code: |-
+          ?mean
+          help.search("regression")
+
+  - name: Read & write
+    items:
+      - title: CSV
+        code: |-
+          df <- read_csv("data.csv")
+          write_csv(df, "out.csv")
+      - title: Excel
+        code: |-
+          library(readxl)
+          df <- read_excel("file.xlsx", sheet = "Sheet1")
+
+  - name: dplyr
+    items:
+      - title: Filter, select, sort
+        code: |-
+          df |>
+            filter(age > 25, country == "BR") |>
+            select(name, age) |>
+            arrange(desc(age))
+      - title: New columns
+        code: |-
+          df |> mutate(total = price * qty,
+                       tier = if_else(total > 1000, "high", "low"))
+      - title: Group and summarise
+        code: |-
+          df |>
+            group_by(country) |>
+            summarise(n = n(), revenue = sum(total), .groups = "drop")
+      - title: Count values
+        code: |-
+          df |> count(country, sort = TRUE)
+      - title: Joins
+        code: |-
+          left_join(orders, customers, by = c("customer_id" = "id"))
+      - title: Multiple conditions
+        code: |-
+          mutate(tier = case_when(
+            total > 1000 ~ "high",
+            total > 100  ~ "medium",
+            TRUE         ~ "low"))
+
+  - name: tidyr
+    items:
+      - title: Wide to long / long to wide
+        code: |-
+          pivot_longer(df, cols = jan:dec, names_to = "month", values_to = "value")
+          pivot_wider(df, names_from = month, values_from = value)
+      - title: Missing values
+        code: |-
+          drop_na(df, email)
+          replace_na(df, list(age = 0))
+
+  - name: ggplot2
+    items:
+      - title: Scatter and line
+        code: |-
+          ggplot(df, aes(x = date, y = sales, color = region)) +
+            geom_line() +
+            labs(title = "Sales", x = NULL, y = "R$")
+      - title: Bar chart
+        code: |-
+          ggplot(df, aes(x = country, y = revenue)) + geom_col()
+      - title: Histogram
+        code: |-
+          ggplot(df, aes(age)) + geom_histogram(bins = 20)
+      - title: Save a chart
+        code: |-
+          ggsave("chart.png", width = 8, height = 5, dpi = 150)

@@ -1,0 +1,108 @@
+name: Docker
+order: 9
+category: Tools
+description: Images, containers, volumes, logs, Dockerfile and Docker Compose.
+sections:
+  - name: Containers
+    items:
+      - title: Run a container
+        code: |-
+          docker run -d --name web -p 8080:80 nginx
+      - title: Run interactively and remove on exit
+        code: |-
+          docker run --rm -it python:3.12 bash
+      - title: List containers
+        code: |-
+          docker ps
+          docker ps -a
+      - title: Start / stop / remove
+        code: |-
+          docker stop web
+          docker start web
+          docker rm -f web
+      - title: Shell inside a running container
+        code: |-
+          docker exec -it web sh
+      - title: Logs
+        code: |-
+          docker logs -f --tail 100 web
+      - title: Copy files in / out
+        code: |-
+          docker cp web:/etc/nginx/nginx.conf .
+          docker cp ./site web:/usr/share/nginx/html
+      - title: Environment variables and volume
+        code: |-
+          docker run -d -e POSTGRES_PASSWORD=secret \
+            -v pgdata:/var/lib/postgresql/data -p 5432:5432 postgres:16
+
+  - name: Images
+    items:
+      - title: Build an image
+        code: |-
+          docker build -t myapp:1.0 .
+      - title: List / remove images
+        code: |-
+          docker images
+          docker rmi myapp:1.0
+      - title: Pull / push
+        code: |-
+          docker pull python:3.12-slim
+          docker tag myapp:1.0 user/myapp:1.0
+          docker push user/myapp:1.0
+
+  - name: Dockerfile
+    items:
+      - title: Python app
+        code: |-
+          FROM python:3.12-slim
+          WORKDIR /app
+          COPY requirements.txt .
+          RUN pip install --no-cache-dir -r requirements.txt
+          COPY . .
+          EXPOSE 8000
+          CMD ["python", "app.py"]
+
+  - name: Compose
+    items:
+      - title: Start / stop
+        code: |-
+          docker compose up -d
+          docker compose down
+      - title: Logs and rebuild
+        code: |-
+          docker compose logs -f api
+          docker compose up -d --build
+      - title: Run a command in a service
+        code: |-
+          docker compose exec api bash
+      - title: docker-compose.yml example
+        code: |-
+          services:
+            api:
+              build: .
+              ports: ["8000:8000"]
+              env_file: .env
+              depends_on: [db]
+            db:
+              image: postgres:16
+              environment:
+                POSTGRES_PASSWORD: secret
+              volumes: [pgdata:/var/lib/postgresql/data]
+          volumes:
+            pgdata:
+
+  - name: Cleanup & info
+    items:
+      - title: Disk usage / clean up
+        code: |-
+          docker system df
+          docker system prune
+        note: Add -a --volumes to remove everything unused (careful).
+      - title: Volumes and networks
+        code: |-
+          docker volume ls
+          docker network ls
+      - title: Inspect / resource usage
+        code: |-
+          docker inspect web
+          docker stats

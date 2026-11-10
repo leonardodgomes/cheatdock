@@ -1,0 +1,130 @@
+name: Git
+order: 5
+category: Tools
+description: Commit, branch, merge, undo mistakes, stash and work with remotes.
+sections:
+  - name: Setup & start
+    items:
+      - title: Set your name and email
+        code: |-
+          git config --global user.name "Your Name"
+          git config --global user.email "you@example.com"
+      - title: Start or clone a repository
+        code: |-
+          git init
+          git clone https://github.com/user/repo.git
+      - title: Default branch name
+        code: |-
+          git config --global init.defaultBranch main
+
+  - name: Everyday
+    items:
+      - title: What changed
+        code: |-
+          git status
+          git diff            # unstaged changes
+          git diff --staged   # staged changes
+      - title: Stage and commit
+        code: |-
+          git add file.py
+          git add -A
+          git commit -m "Describe the change"
+      - title: Stage only parts of a file
+        code: |-
+          git add -p file.py
+      - title: History
+        code: |-
+          git log --oneline --graph --all
+          git log -p -- file.py
+      - title: Who changed each line
+        code: |-
+          git blame file.py
+      - title: Show one commit
+        code: |-
+          git show abc1234
+
+  - name: Branches
+    items:
+      - title: List / create / switch
+        code: |-
+          git branch -a
+          git switch -c feature/login
+          git switch main
+      - title: Merge a branch into the current one
+        code: |-
+          git merge feature/login
+      - title: Rebase onto main
+        code: |-
+          git fetch origin
+          git rebase origin/main
+        note: Rewrites your commits. Don't rebase commits others already pulled.
+      - title: Delete a branch
+        code: |-
+          git branch -d feature/login
+          git push origin --delete feature/login
+      - title: Rename current branch
+        code: |-
+          git branch -m new-name
+      - title: Copy one commit to this branch
+        code: |-
+          git cherry-pick abc1234
+
+  - name: Remotes
+    items:
+      - title: Add / show remotes
+        code: |-
+          git remote add origin https://github.com/user/repo.git
+          git remote -v
+      - title: Push a new branch
+        code: |-
+          git push -u origin feature/login
+      - title: Get changes
+        code: |-
+          git fetch
+          git pull --rebase
+      - title: Tags
+        code: |-
+          git tag -a v1.0.0 -m "Release 1.0.0"
+          git push origin v1.0.0
+
+  - name: Undo
+    items:
+      - title: Discard changes in a file
+        code: |-
+          git restore file.py
+      - title: Unstage a file
+        code: |-
+          git restore --staged file.py
+      - title: Fix the last commit message or add a file
+        code: |-
+          git commit --amend -m "Better message"
+          git commit --amend --no-edit
+      - title: Undo last commit, keep changes
+        code: |-
+          git reset --soft HEAD~1
+      - title: Throw away local commits and changes
+        code: |-
+          git reset --hard origin/main
+        note: Cannot be undone for uncommitted work.
+      - title: Revert a pushed commit
+        code: |-
+          git revert abc1234
+        note: Safe for shared branches; creates a new commit.
+      - title: Find a lost commit
+        code: |-
+          git reflog
+
+  - name: Stash & clean
+    items:
+      - title: Stash work in progress
+        code: |-
+          git stash push -m "wip"
+          git stash list
+          git stash pop
+      - title: Remove untracked files
+        code: |-
+          git clean -n   # preview
+          git clean -fd
+      - title: Stop tracking a file but keep it
+        code: |-
+          git rm --cached secrets.env

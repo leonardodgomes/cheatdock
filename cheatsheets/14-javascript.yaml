@@ -1,0 +1,142 @@
+name: JavaScript
+order: 14
+category: Programming
+description: Variables, arrays, objects, async/await, fetch, DOM and npm.
+sections:
+  - name: Basics
+    items:
+      - title: Variables
+        code: |-
+          const name = "Ana";   // cannot be reassigned
+          let count = 0;        // can change
+      - title: Template strings
+        code: |-
+          `Hello ${name}, you have ${count} messages`
+      - title: Functions
+        code: |-
+          function add(a, b = 0) { return a + b; }
+          const double = (x) => x * 2;
+      - title: Conditions
+        code: |-
+          if (x > 10) { ... } else if (x === 10) { ... } else { ... }
+          const label = x > 0 ? "pos" : "neg";
+        note: Use === and !== (strict comparison).
+      - title: Optional chaining and default values
+        code: |-
+          user?.address?.city
+          const port = config.port ?? 3000;
+      - title: Loops
+        code: |-
+          for (const item of items) { ... }
+          for (const [key, value] of Object.entries(obj)) { ... }
+
+  - name: Arrays
+    items:
+      - title: Transform / filter / total
+        code: |-
+          nums.map(n => n * 2)
+          nums.filter(n => n > 0)
+          nums.reduce((sum, n) => sum + n, 0)
+      - title: Find
+        code: |-
+          users.find(u => u.id === 7)
+          users.findIndex(u => u.id === 7)
+          nums.includes(3)
+          nums.some(n => n < 0)
+      - title: Sort
+        code: |-
+          nums.sort((a, b) => a - b)
+          users.sort((a, b) => a.name.localeCompare(b.name))
+      - title: Add / remove
+        code: |-
+          arr.push(x); arr.pop();
+          arr.unshift(x); arr.shift();
+          const copy = [...arr, newItem];
+      - title: Unique values
+        code: |-
+          const unique = [...new Set(arr)];
+
+  - name: Objects & JSON
+    items:
+      - title: Destructuring and spread
+        code: |-
+          const { name, age = 0 } = user;
+          const updated = { ...user, age: 31 };
+      - title: Keys and values
+        code: |-
+          Object.keys(obj)   Object.values(obj)   Object.entries(obj)
+      - title: JSON
+        code: |-
+          const text = JSON.stringify(data, null, 2);
+          const data = JSON.parse(text);
+      - title: Class
+        code: |-
+          class Person {
+            constructor(name) { this.name = name; }
+            greet() { return `Hi, ${this.name}`; }
+          }
+
+  - name: Async
+    items:
+      - title: Fetch JSON
+        code: |-
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(res.status);
+          const data = await res.json();
+      - title: POST JSON
+        code: |-
+          await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+      - title: Try / catch with async
+        code: |-
+          try {
+            const data = await load();
+          } catch (err) {
+            console.error(err);
+          }
+      - title: Run in parallel
+        code: |-
+          const [a, b] = await Promise.all([getA(), getB()]);
+      - title: Wait / timer
+        code: |-
+          setTimeout(() => console.log("later"), 1000);
+          await new Promise(r => setTimeout(r, 500));
+
+  - name: DOM
+    items:
+      - title: Select elements
+        code: |-
+          document.querySelector("#id")
+          document.querySelectorAll(".item")
+      - title: Events
+        code: |-
+          button.addEventListener("click", (e) => { ... });
+      - title: Change content and classes
+        code: |-
+          el.textContent = "Hello";
+          el.classList.toggle("active");
+          el.style.display = "none";
+      - title: Store in the browser
+        code: |-
+          localStorage.setItem("key", JSON.stringify(value));
+          JSON.parse(localStorage.getItem("key"));
+
+  - name: Node & npm
+    items:
+      - title: Project and packages
+        code: |-
+          npm init -y
+          npm install express
+          npm install -D typescript
+          npm run dev
+      - title: Modules
+        code: |-
+          import fs from "node:fs/promises";
+          export function helper() { ... }
+      - title: Debug output
+        code: |-
+          console.log(obj);
+          console.table(rows);

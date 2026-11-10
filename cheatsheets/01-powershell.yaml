@@ -1,5 +1,8 @@
 name: PowerShell
 order: 1
+category: Shell & OS
+description: Files, pipeline, processes, services, scripting and web requests.
+default: true
 sections:
   - name: Help & discovery
     items:

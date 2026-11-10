@@ -1,0 +1,95 @@
+name: CMD
+order: 7
+category: Shell & OS
+description: Classic Windows Command Prompt for files, network, processes and batch files.
+sections:
+  - name: Files & folders
+    items:
+      - title: List / change folder
+        code: |-
+          dir /a
+          cd /d D:\Projects
+      - title: Create and delete
+        code: |-
+          mkdir logs
+          rmdir /s /q build
+          del /q *.tmp
+      - title: Copy folders
+        code: |-
+          robocopy C:\src D:\backup /e
+          xcopy C:\src D:\backup /e /i
+        note: robocopy /mir mirrors (also deletes extras in the target).
+      - title: Rename / move
+        code: |-
+          ren old.txt new.txt
+          move file.txt D:\archive\
+      - title: Find text in files
+        code: |-
+          findstr /s /i "error" *.log
+      - title: Show a folder tree
+        code: |-
+          tree /f
+
+  - name: System
+    items:
+      - title: System info
+        code: |-
+          systeminfo
+          ver
+          hostname
+      - title: Processes
+        code: |-
+          tasklist | findstr chrome
+          taskkill /im notepad.exe /f
+          taskkill /pid 1234 /f
+      - title: Repair Windows files
+        code: |-
+          sfc /scannow
+          DISM /Online /Cleanup-Image /RestoreHealth
+        note: Run as administrator.
+      - title: Environment variables
+        code: |-
+          echo %PATH%
+          set MY_VAR=value
+          setx MY_VAR "value"
+        note: setx saves permanently (new windows only).
+      - title: Where is a program
+        code: |-
+          where python
+      - title: Shut down / restart
+        code: |-
+          shutdown /s /t 0
+          shutdown /r /t 0
+
+  - name: Network
+    items:
+      - title: IP configuration
+        code: |-
+          ipconfig /all
+          ipconfig /flushdns
+      - title: Test connection
+        code: |-
+          ping google.com
+          tracert google.com
+          nslookup example.com
+      - title: Open ports and owners
+        code: |-
+          netstat -ano | findstr :8080
+
+  - name: Batch files
+    items:
+      - title: Script skeleton
+        code: |-
+          @echo off
+          setlocal
+          set NAME=%~1
+          echo Hello %NAME%
+          pause
+      - title: If / loop
+        code: |-
+          if exist file.txt (echo yes) else (echo no)
+          for %%f in (*.txt) do echo %%f
+        note: Use %f instead of %%f when typing directly in the prompt.
+      - title: Exit code of last command
+        code: |-
+          echo %ERRORLEVEL%

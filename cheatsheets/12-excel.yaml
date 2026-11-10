@@ -1,0 +1,118 @@
+name: Excel
+order: 12
+category: Data
+description: Lookups, conditional sums, text and date formulas, dynamic arrays and shortcuts.
+sections:
+  - name: Lookup
+    items:
+      - title: XLOOKUP
+        code: |-
+          =XLOOKUP(A2, Products!A:A, Products!C:C, "Not found")
+        note: Excel 2021 / 365. Portuguese Excel uses PROCX and ; as separator.
+      - title: VLOOKUP (exact match)
+        code: |-
+          =VLOOKUP(A2, Products!A:D, 3, FALSE)
+      - title: INDEX + MATCH
+        code: |-
+          =INDEX(C:C, MATCH(A2, A:A, 0))
+      - title: Two-way lookup
+        code: |-
+          =INDEX(B2:M20, MATCH(name, A2:A20, 0), MATCH(month, B1:M1, 0))
+
+  - name: Conditional math
+    items:
+      - title: SUMIFS / COUNTIFS / AVERAGEIFS
+        code: |-
+          =SUMIFS(D:D, B:B, "North", C:C, ">=100")
+          =COUNTIFS(B:B, "North", E:E, "Paid")
+          =AVERAGEIFS(D:D, B:B, "North")
+      - title: Criteria with a cell or date
+        code: |-
+          =SUMIFS(D:D, A:A, ">=" & F1, A:A, "<" & F2)
+      - title: IF / IFS
+        code: |-
+          =IF(D2>=1000, "High", "Low")
+          =IFS(D2>=1000, "High", D2>=100, "Medium", TRUE, "Low")
+      - title: AND / OR
+        code: |-
+          =IF(AND(B2="North", D2>100), "Yes", "No")
+      - title: Hide errors
+        code: |-
+          =IFERROR(A2/B2, 0)
+
+  - name: Dynamic arrays (365)
+    items:
+      - title: FILTER
+        code: |-
+          =FILTER(A2:D100, B2:B100="North", "None")
+      - title: UNIQUE / SORT
+        code: |-
+          =UNIQUE(B2:B100)
+          =SORT(A2:D100, 4, -1)
+      - title: LET (name parts of a formula)
+        code: |-
+          =LET(total, SUM(D:D), tax, total*0.1, total + tax)
+      - title: Sequence of numbers
+        code: |-
+          =SEQUENCE(10)
+
+  - name: Text
+    items:
+      - title: Join text
+        code: |-
+          =A2 & " " & B2
+          =TEXTJOIN(", ", TRUE, A2:A10)
+      - title: Extract parts
+        code: |-
+          =LEFT(A2, 3)   =RIGHT(A2, 4)   =MID(A2, 2, 5)
+          =TEXTBEFORE(A2, "@")   =TEXTAFTER(A2, "@")
+      - title: Clean up
+        code: |-
+          =TRIM(A2)   =UPPER(A2)   =PROPER(A2)
+          =SUBSTITUTE(A2, "-", "")
+      - title: Format numbers and dates as text
+        code: |-
+          =TEXT(A2, "dd/mm/yyyy")
+          =TEXT(B2, "#,##0.00")
+      - title: Split into columns
+        code: |-
+          =TEXTSPLIT(A2, ",")
+
+  - name: Dates
+    items:
+      - title: Today and now
+        code: |-
+          =TODAY()   =NOW()
+      - title: Parts of a date
+        code: |-
+          =YEAR(A2)   =MONTH(A2)   =DAY(A2)   =WEEKDAY(A2, 2)
+      - title: Build a date / end of month
+        code: |-
+          =DATE(2026, 1, 31)
+          =EOMONTH(A2, 0)
+      - title: Difference between dates
+        code: |-
+          =DATEDIF(A2, B2, "d")
+          =NETWORKDAYS(A2, B2)
+
+  - name: Shortcuts
+    items:
+      - title: Navigation and selection
+        code: |-
+          Ctrl + Arrow        jump to edge of data
+          Ctrl + Shift + Arrow  select to edge
+          Ctrl + Space / Shift + Space  column / row
+      - title: Editing
+        code: |-
+          F2            edit cell
+          F4            toggle $ absolute reference
+          Ctrl + D      fill down
+          Alt + =       AutoSum
+          Ctrl + ;      today's date
+      - title: Tables and filters
+        code: |-
+          Ctrl + T            create table
+          Ctrl + Shift + L    toggle filters
+      - title: Paste special
+        code: |-
+          Ctrl + Alt + V
